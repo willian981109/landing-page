@@ -19,6 +19,7 @@ const studentMenuToggle = document.querySelector("[data-student-menu-toggle]");
 const studentLoginOpen = document.querySelector("[data-student-login-open]");
 const studentLoginForm = document.querySelector("[data-student-login-form]");
 const revealItems = document.querySelectorAll(".reveal");
+const packageCards = document.querySelectorAll(".service-card");
 
 function updateHeaderState() {
   header?.classList.toggle("is-scrolled", window.scrollY > 12);
@@ -118,6 +119,71 @@ function setupRevealAnimation() {
   revealItems.forEach((item) => observer.observe(item));
 }
 
+function closePackageCard(card) {
+  const toggle = card.querySelector("[data-package-toggle]");
+  const details = card.querySelector("[data-package-details]");
+  const detailsLinks = details?.querySelectorAll("a, button");
+
+  card.classList.remove("active");
+  details?.classList.remove("expanded");
+  toggle?.setAttribute("aria-expanded", "false");
+  detailsLinks?.forEach((item) => item.setAttribute("tabindex", "-1"));
+
+  if (details) {
+    details.setAttribute("aria-hidden", "true");
+    details.style.maxHeight = "0px";
+  }
+}
+
+function openPackageCard(card) {
+  const toggle = card.querySelector("[data-package-toggle]");
+  const details = card.querySelector("[data-package-details]");
+  const detailsLinks = details?.querySelectorAll("a, button");
+
+  packageCards.forEach((item) => {
+    if (item !== card) {
+      closePackageCard(item);
+    }
+  });
+
+  card.classList.add("active");
+  details?.classList.add("expanded");
+  toggle?.setAttribute("aria-expanded", "true");
+  detailsLinks?.forEach((item) => item.removeAttribute("tabindex"));
+
+  if (details) {
+    details.setAttribute("aria-hidden", "false");
+    details.style.maxHeight = `${details.scrollHeight}px`;
+  }
+}
+
+function setupPackageCards() {
+  packageCards.forEach((card) => {
+    const toggle = card.querySelector("[data-package-toggle]");
+
+    toggle?.addEventListener("click", () => {
+      if (card.classList.contains("active")) {
+        closePackageCard(card);
+        return;
+      }
+
+      openPackageCard(card);
+    });
+  });
+
+  window.addEventListener(
+    "resize",
+    () => {
+      const activeDetails = document.querySelector(".service-card.active [data-package-details]");
+
+      if (activeDetails) {
+        activeDetails.style.maxHeight = `${activeDetails.scrollHeight}px`;
+      }
+    },
+    { passive: true }
+  );
+}
+
 function prepareFutureIntegrations() {
   window.englishStudio = {
     config: appConfig,
@@ -134,4 +200,5 @@ window.addEventListener("load", updateHeaderState);
 setupNavigation();
 setupStudentAccess();
 setupRevealAnimation();
+setupPackageCards();
 prepareFutureIntegrations();
