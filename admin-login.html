@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Login administrativo da professora no English Studio." />
+    <title>Área da Professora | English Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="teacher-create-activity.css" />
+  </head>
+  <body>
+    <header class="teacher-header">
+      <a class="brand" href="index.html" aria-label="Voltar para a landing page">
+        <span class="brand__mark">E</span>
+        <span class="brand__text">English Studio</span>
+      </a>
+
+      <a class="header-link" href="student.html">Área do aluno</a>
+    </header>
+
+    <main class="teacher-main admin-login-main">
+      <section class="view-heading">
+        <p class="eyebrow">Área da Professora</p>
+        <h1>Entrar no painel administrativo</h1>
+        <p>Acesse sua área privada para criar atividades e, futuramente, gerenciar agenda, alunos e materiais.</p>
+      </section>
+
+      <section class="form-card admin-login-panel">
+        <form class="admin-login-form admin-login-form--page" data-admin-login-form>
+          <label class="field">
+            <span>Email</span>
+            <input type="email" name="email" autocomplete="email" required />
+          </label>
+
+          <label class="field">
+            <span>Senha</span>
+            <input type="password" name="password" autocomplete="current-password" required />
+          </label>
+
+          <button class="publish-button" type="submit">Entrar</button>
+          <p class="auth-status" data-auth-message></p>
+        </form>
+      </section>
+    </main>
+
+    <script src="admin-login.js" defer></script>
+  </body>
+</html>

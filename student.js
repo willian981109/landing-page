@@ -46,89 +46,6 @@ const studentData = {
       url: "https://dictionary.cambridge.org/",
     },
   ],
-  tasks: [
-    {
-      title: "Listening: daily routine",
-      description: "Ouça o áudio indicado e escreva 5 frases sobre a rotina da personagem.",
-      due: "14/05/2026",
-      status: "Pendente",
-      attachments: [
-        {
-          title: "Folha de respostas",
-          type: "Google Docs",
-          kind: "doc",
-          url: "https://docs.google.com/document/d/answer-sheet-demo/edit",
-          primary: true,
-        },
-        {
-          title: "Link da atividade",
-          type: "Link externo",
-          kind: "link",
-          url: "https://www.esl-lab.com/",
-        },
-        {
-          title: "Áudio da atividade",
-          type: "Áudio",
-          kind: "audio",
-          url: "https://www.esl-lab.com/easy/daily-schedule/",
-        },
-        {
-          title: "Material de apoio",
-          type: "PDF",
-          kind: "pdf",
-          url: "https://www.cambridgeenglish.org/Images/506886-a2-key-2020-vocabulary-list.pdf",
-        },
-      ],
-    },
-    {
-      title: "Speaking practice",
-      description: "Grave um áudio de 1 minuto contando como foi seu último fim de semana.",
-      due: "17/05/2026",
-      status: "Em andamento",
-      attachments: [
-        {
-          title: "Folha de respostas",
-          type: "Google Docs",
-          kind: "doc",
-          url: "https://docs.google.com/document/d/speaking-answer-sheet-demo/edit",
-          primary: true,
-        },
-        {
-          title: "Modelo de roteiro",
-          type: "PDF",
-          kind: "pdf",
-          url: "https://www.cambridgeenglish.org/Images/506886-a2-key-2020-vocabulary-list.pdf",
-        },
-        {
-          title: "Exemplo em vídeo",
-          type: "Vídeo",
-          kind: "video",
-          url: "https://www.youtube.com/results?search_query=english+speaking+practice+past+simple",
-        },
-      ],
-    },
-    {
-      title: "Vocabulary review",
-      description: "Revisar 20 palavras novas e criar frases próprias com 10 delas.",
-      due: "Concluída em 10/05/2026",
-      status: "Concluída",
-      attachments: [
-        {
-          title: "Folha de respostas",
-          type: "Google Docs",
-          kind: "doc",
-          url: "https://docs.google.com/document/d/vocabulary-answer-sheet-demo/edit",
-          primary: true,
-        },
-        {
-          title: "Lista de vocabulário",
-          type: "PDF",
-          kind: "pdf",
-          url: "https://www.cambridgeenglish.org/Images/506886-a2-key-2020-vocabulary-list.pdf",
-        },
-      ],
-    },
-  ],
   feedback: {
     teacherComment:
       "Você tem evoluído bem na organização das frases e já demonstra mais confiança ao responder sem traduzir. Ainda há dificuldades com verbos irregulares e compreensão em falas mais rápidas, mas seu comprometimento, pronúncia e naturalidade nas perguntas estão cada vez melhores. Continue praticando com foco em listening, revisão do passado e construção de frases completas para ganhar mais segurança nas próximas conversas.",
@@ -193,6 +110,7 @@ const studentData = {
 
 const navItems = document.querySelectorAll("[data-view-target]");
 const views = document.querySelectorAll("[data-view]");
+const API_BASE_URL = "http://localhost:3000";
 const scheduleState = {
   selectedDay: studentData.schedule.selectedDay,
   selectedSlotIndex: null,
@@ -264,89 +182,87 @@ function renderMaterials() {
     .join("");
 }
 
-function getAttachmentIcon(kind) {
-  const icons = {
-    doc: "DOC",
-    pdf: "PDF",
-    link: "URL",
-    audio: "AUD",
-    video: "VID",
-  };
+function formatActivityDate(value) {
+  if (!value) {
+    return "Sem prazo";
+  }
 
-  return icons[kind] ?? "MAT";
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
-function renderTaskAttachments(attachments) {
-  return attachments
-    .map(
-      (attachment) => `
-        <a
-          class="attachment-item ${attachment.primary ? "attachment-item--primary" : ""}"
-          href="${attachment.url}"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <span class="attachment-item__icon attachment-item__icon--${attachment.kind}">
-            ${getAttachmentIcon(attachment.kind)}
-          </span>
-          <span class="attachment-item__content">
-            <strong>${attachment.title}</strong>
-            <span>${attachment.type}</span>
-            ${
-              attachment.primary
-                ? "<small>Este documento pode ser editado por você e pela professora.</small>"
-                : ""
-            }
-          </span>
-        </a>
-      `
-    )
-    .join("");
-}
-
-function renderTasks() {
+async function renderTasks() {
   const container = document.querySelector("[data-tasks-list]");
 
-  container.innerHTML = studentData.tasks
-    .map((task, index) => {
-      const statusClass = getStatusClass(task.status);
-      const isCompleted = task.status === "Concluída";
+  container.innerHTML = `
+    <article class="activity-card">
+      <div>
+        <span class="status status--em-andamento">Carregando</span>
+        <h3>Buscando atividades</h3>
+        <p>Aguarde enquanto carregamos as atividades publicadas pela professora.</p>
+      </div>
+    </article>
+  `;
 
-      return `
+  try {
+    const response = await fetch(`${API_BASE_URL}/activities`);
+
+    if (!response.ok) {
+      throw new Error("Não foi possível carregar as atividades.");
+    }
+
+    const activities = await response.json();
+
+    if (!activities.length) {
+      container.innerHTML = `
         <article class="activity-card">
           <div>
-            <span class="status status--${statusClass}">${task.status}</span>
-            <h3>${task.title}</h3>
-            <p>${task.description}</p>
-          </div>
-          <div class="activity-card__meta">
-            <p><span class="panel-label">Prazo</span><strong>${task.due}</strong></p>
-            <div>
-              <span class="panel-label">Materiais da atividade</span>
-              <div class="attachment-list">
-                ${renderTaskAttachments(task.attachments)}
-              </div>
-            </div>
-            ${
-              isCompleted
-                ? '<p class="activity-card__done">Atividade concluída.</p>'
-                : `<button class="reschedule-button activity-card__complete" type="button" data-complete-task="${index}">Marcar como concluída</button>`
-            }
+            <span class="status status--disponivel">Sem atividades</span>
+            <h3>Nenhuma atividade publicada</h3>
+            <p>Quando a professora criar uma atividade, ela aparecerá aqui.</p>
           </div>
         </article>
       `;
-    })
-    .join("");
+      return;
+    }
 
-  container.querySelectorAll("[data-complete-task]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const task = studentData.tasks[Number(button.dataset.completeTask)];
-
-      task.status = "Concluída";
-      task.due = task.due.startsWith("Concluída") ? task.due : `Concluída em ${task.due}`;
-      renderTasks();
-    });
-  });
+    container.innerHTML = activities
+      .map(
+        (activity) => `
+          <article class="activity-card">
+            <div>
+              <span class="status status--em-andamento">Atividade</span>
+              <h3>${activity.title}</h3>
+              <p>${activity.description}</p>
+            </div>
+            <div class="activity-card__meta">
+              <p><span class="panel-label">Prazo</span><strong>${formatActivityDate(activity.deadline)}</strong></p>
+              <p><span class="panel-label">Pontuação</span><strong>${activity.points} pontos</strong></p>
+            </div>
+          </article>
+        `
+      )
+      .join("");
+  } catch (error) {
+    container.innerHTML = `
+      <article class="activity-card">
+        <div>
+          <span class="status status--pendente">Erro</span>
+          <h3>Atividades indisponíveis</h3>
+          <p>${error.message}</p>
+        </div>
+      </article>
+    `;
+  }
 }
 
 function renderStars(score) {

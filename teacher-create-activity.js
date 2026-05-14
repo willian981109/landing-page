@@ -27,6 +27,8 @@ const materialTypes = {
 };
 
 const form = document.querySelector("[data-assignment-form]");
+const adminLogoutButton = document.querySelector("[data-admin-logout]");
+const adminGreeting = document.querySelector("[data-admin-greeting]");
 const materialMenu = document.querySelector("[data-material-menu]");
 const materialToggle = document.querySelector("[data-material-toggle]");
 const materialOptions = document.querySelector("[data-material-options]");
@@ -42,6 +44,91 @@ const successMessage = document.querySelector("[data-success-message]");
 
 const materials = [];
 let selectedMaterialKind = "link";
+
+const API_BASE_URL = "http://localhost:3000";
+const ADMIN_TOKEN_KEY = "englishStudioAdminToken";
+const ADMIN_USER_KEY = "englishStudioAdminUser";
+
+function getAssignmentControls() {
+  return form.querySelectorAll("input, textarea, button");
+}
+
+function getAdminToken() {
+  return localStorage.getItem(ADMIN_TOKEN_KEY);
+}
+
+function getAuthHeaders() {
+  const token = getAdminToken();
+
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function clearAdminSession() {
+  localStorage.removeItem(ADMIN_TOKEN_KEY);
+  localStorage.removeItem(ADMIN_USER_KEY);
+}
+
+function getAdminUser() {
+  const storedUser = localStorage.getItem(ADMIN_USER_KEY);
+
+  if (!storedUser) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(storedUser);
+  } catch (error) {
+    localStorage.removeItem(ADMIN_USER_KEY);
+    return null;
+  }
+}
+
+function getTokenPayload(token) {
+  try {
+    const payload = token.split(".")[1];
+    return JSON.parse(atob(payload));
+  } catch (error) {
+    return null;
+  }
+}
+
+function isTeacherTokenValid(token) {
+  const payload = getTokenPayload(token);
+  const expiresAt = payload?.exp ? payload.exp * 1000 : 0;
+
+  return Boolean(payload?.role === "teacher" && expiresAt > Date.now());
+}
+
+function setAdminAreaLocked(isLocked) {
+  form.classList.toggle("is-locked", isLocked);
+  getAssignmentControls().forEach((control) => {
+    control.disabled = isLocked;
+  });
+
+  if (isLocked) {
+    closeMaterialOptions();
+    closeMaterialDraft();
+  }
+}
+
+function hasTeacherSession() {
+  const user = getAdminUser();
+  const token = getAdminToken();
+
+  return Boolean(token && user?.role === "teacher" && isTeacherTokenValid(token));
+}
+
+function requireTeacherSession() {
+  if (hasTeacherSession()) {
+    const user = getAdminUser();
+    adminGreeting.textContent = `Conectada como ${user?.name || "professora"}. Crie atividades e gerencie conteúdos do painel administrativo.`;
+    setAdminAreaLocked(false);
+    return;
+  }
+
+  clearAdminSession();
+  window.location.href = "admin-login.html";
+}
 
 function closeMaterialOptions() {
   materialOptions.classList.remove("active");
@@ -78,6 +165,11 @@ function closeMaterialDraft() {
   materialDraft.hidden = true;
   materialTitleInput.value = "";
   materialUrlInput.value = "";
+}
+
+function clearMaterials() {
+  materials.splice(0, materials.length);
+  renderMaterials();
 }
 
 function renderMaterials() {
@@ -150,6 +242,11 @@ materialOptions.querySelectorAll("[data-material-kind]").forEach((option) => {
 addMaterialButton.addEventListener("click", addMaterial);
 cancelMaterialButton.addEventListener("click", closeMaterialDraft);
 
+adminLogoutButton.addEventListener("click", () => {
+  clearAdminSession();
+  window.location.href = "admin-login.html";
+});
+
 document.addEventListener("click", (event) => {
   if (!materialOptions.contains(event.target) && !materialToggle.contains(event.target)) {
     closeMaterialOptions();
@@ -163,20 +260,68 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   if (!form.reportValidity()) {
     return;
   }
 
-  successMessage.hidden = false;
-  successMessage.textContent = "Atividade criada com sucesso";
-  form.dataset.published = "true";
+  const formData = new FormData(form);
+  const payload = {
+    title: formData.get("title"),
+    description: formData.get("description"),
+    deadline: formData.get("dueDate"),
+    points: Number(formData.get("points") || 0),
+  };
+  const token = getAdminToken();
 
-  window.setTimeout(() => {
-    successMessage.hidden = true;
-  }, 3200);
+  if (!token) {
+    clearAdminSession();
+    window.location.href = "admin-login.html";
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/activities`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (response.status === 401) {
+      clearAdminSession();
+      alert("Sua sessão expirou. Faça login novamente.");
+      window.location.href = "admin-login.html";
+      return;
+    }
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Erro ao criar atividade");
+    }
+
+    await response.json();
+
+    alert("Atividade criada com sucesso");
+    successMessage.hidden = false;
+    successMessage.textContent = "Atividade criada com sucesso";
+    form.dataset.published = "true";
+    form.reset();
+    clearMaterials();
+    closeMaterialDraft();
+    closeMaterialOptions();
+
+    window.setTimeout(() => {
+      successMessage.hidden = true;
+    }, 3200);
+  } catch (error) {
+    alert(error.message);
+  }
 });
 
+requireTeacherSession();
 renderMaterials();

@@ -84,11 +84,24 @@ button {
   text-transform: uppercase;
 }
 
-.header-link {
+.teacher-header__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+
+.header-link,
+.logout-link {
   border-bottom: 1px solid rgba(194, 164, 111, 0.58);
+  background: transparent;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
   color: var(--green-900);
   font-size: 0.8rem;
   font-weight: 800;
+  padding: 0;
   text-transform: uppercase;
 }
 
@@ -160,6 +173,11 @@ h3 {
 .assignment-form {
   display: grid;
   gap: 1rem;
+  transition: opacity 180ms ease;
+}
+
+.assignment-form.is-locked {
+  opacity: 0.58;
 }
 
 .form-card {
@@ -177,6 +195,35 @@ h3 {
 .form-sidebar {
   display: grid;
   gap: 1rem;
+}
+
+.admin-login-main {
+  max-width: 780px;
+}
+
+.admin-login-panel,
+.admin-login-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.auth-status {
+  color: var(--muted);
+  margin-bottom: 0;
+}
+
+.auth-status.is-error {
+  color: #7a3e2f;
+  font-weight: 800;
+}
+
+.auth-status.is-success {
+  color: var(--green-900);
+  font-weight: 800;
+}
+
+.assignment-form :disabled {
+  cursor: not-allowed;
 }
 
 .field {

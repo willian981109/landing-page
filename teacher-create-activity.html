@@ -23,14 +23,17 @@
         <span class="brand__text">English Studio</span>
       </a>
 
-      <a class="header-link" href="student.html">Área do aluno</a>
+      <div class="teacher-header__actions">
+        <a class="header-link" href="student.html">Área do aluno</a>
+        <button class="logout-link" type="button" data-admin-logout>Sair</button>
+      </div>
     </header>
 
     <main class="teacher-main">
       <section class="view-heading">
         <p class="eyebrow">Professora</p>
         <h1>Criar atividade</h1>
-        <p>Monte uma tarefa com instruções, materiais e prazo para publicar aos alunos.</p>
+        <p data-admin-greeting>Monte uma tarefa com instruções, materiais e prazo para publicar aos alunos.</p>
       </section>
 
       <form class="assignment-form" data-assignment-form>
@@ -62,12 +65,12 @@
 
             <label class="field">
               <span>Prazo</span>
-              <input type="date" name="dueDate" />
+              <input type="date" name="dueDate" required />
             </label>
 
             <label class="field">
               <span>Pontuação</span>
-              <input type="number" name="points" min="0" step="1" placeholder="100 pontos" />
+              <input type="number" name="points" min="0" step="1" placeholder="100 pontos" required />
             </label>
 
             <fieldset class="recipient-field">
