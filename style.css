@@ -560,19 +560,26 @@ h3 {
 }
 
 .service-grid {
+  align-items: stretch;
   display: grid;
   gap: 1rem;
   margin-top: 3rem;
 }
 
-.service-card {
+.service-grid.has-active {
+  align-items: start;
+}
+
+.service-card,
+.card {
   background: var(--cream);
   border: 1px solid var(--line);
   display: flex;
   flex-direction: column;
-  min-height: 360px;
+  justify-content: space-between;
+  min-height: 420px;
   padding: 2rem;
-  transition: border-color 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+  transition: border-color 200ms ease, opacity 200ms ease, transform 200ms ease, box-shadow 200ms ease;
 }
 
 .service-card:hover {
@@ -580,9 +587,15 @@ h3 {
   transform: translateY(-5px);
 }
 
-.service-card.active {
+.service-card.active,
+.card.active {
   border-color: rgba(194, 164, 111, 0.72);
   box-shadow: var(--shadow);
+  transform: translateY(-3px) scale(1.01);
+}
+
+.service-grid.has-active .service-card:not(.active) {
+  opacity: 0.82;
 }
 
 .service-card__icon,
@@ -595,6 +608,20 @@ h3 {
   margin-bottom: 2.5rem;
 }
 
+.service-card__top,
+.card-top {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.service-card__top .service-card__label {
+  margin-bottom: 1.6rem;
+}
+
+.service-card__top h3 {
+  margin-bottom: 0;
+}
+
 .service-card p {
   color: var(--muted);
   margin-bottom: 0;
@@ -603,7 +630,15 @@ h3 {
 .service-card__summary {
   color: var(--green-900) !important;
   font-weight: 700;
-  margin-bottom: 1rem !important;
+  margin-bottom: 0 !important;
+}
+
+.service-card__base,
+.card-bottom {
+  display: grid;
+  gap: 1rem;
+  margin-top: auto;
+  padding-top: 2rem;
 }
 
 .service-card__price {
@@ -612,13 +647,11 @@ h3 {
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0.08em;
-  margin-top: auto;
   padding-top: 1.25rem;
   text-transform: uppercase;
 }
 
 .service-card__toggle {
-  margin-top: 1rem;
   width: 100%;
 }
 
@@ -664,19 +697,6 @@ h3 {
 
 .service-card__whatsapp {
   width: 100%;
-}
-
-.packages-cta {
-  display: flex;
-  justify-content: center;
-  margin-top: 2.5rem;
-  text-align: center;
-}
-
-.packages-cta .button {
-  max-width: 100%;
-  min-height: 3.5rem;
-  white-space: normal;
 }
 
 .trial-section {

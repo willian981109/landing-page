@@ -19,6 +19,7 @@ const studentMenuToggle = document.querySelector("[data-student-menu-toggle]");
 const studentLoginOpen = document.querySelector("[data-student-login-open]");
 const studentLoginForm = document.querySelector("[data-student-login-form]");
 const revealItems = document.querySelectorAll(".reveal");
+const packageGrid = document.querySelector(".service-grid");
 const packageCards = document.querySelectorAll(".service-card");
 
 function updateHeaderState() {
@@ -135,6 +136,12 @@ function closePackageCard(card) {
   }
 }
 
+function syncPackageGridState() {
+  const hasActiveCard = Array.from(packageCards).some((card) => card.classList.contains("active"));
+
+  packageGrid?.classList.toggle("has-active", hasActiveCard);
+}
+
 function openPackageCard(card) {
   const toggle = card.querySelector("[data-package-toggle]");
   const details = card.querySelector("[data-package-details]");
@@ -155,6 +162,8 @@ function openPackageCard(card) {
     details.setAttribute("aria-hidden", "false");
     details.style.maxHeight = `${details.scrollHeight}px`;
   }
+
+  syncPackageGridState();
 }
 
 function setupPackageCards() {
@@ -164,6 +173,7 @@ function setupPackageCards() {
     toggle?.addEventListener("click", () => {
       if (card.classList.contains("active")) {
         closePackageCard(card);
+        syncPackageGridState();
         return;
       }
 
