@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Área do aluno do English Studio com agenda, feedbacks, materiais e acompanhamento."
+    />
+    <title>Área do Aluno | English Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="student.css" />
+  </head>
+  <body>
+    <div class="student-shell">
+      <header class="student-header">
+        <a class="brand" href="index.html" aria-label="Voltar para a landing page">
+          <span class="brand__mark">E</span>
+          <span class="brand__text">English Studio</span>
+        </a>
+
+        <div class="student-header__meta">
+          <span>Welcome, Joyce</span>
+          <button class="logout-button" type="button">Logout</button>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="Menu da área do aluno">
+        <button class="sidebar__item active" type="button" data-view-target="home">Início</button>
+        <button class="sidebar__item" type="button" data-view-target="materials">
+          Materiais de estudo
+        </button>
+        <button class="sidebar__item" type="button" data-view-target="tasks">
+          Atividades / lições
+        </button>
+        <button class="sidebar__item" type="button" data-view-target="feedback">
+          Feedback e acompanhamento
+        </button>
+        <button class="sidebar__item" type="button" data-view-target="schedule">Agenda</button>
+        <button class="sidebar__item" type="button" data-view-target="profile">
+          Minhas informações
+        </button>
+      </aside>
+
+      <main class="student-main">
+        <section class="view active" id="home" data-view>
+          <div class="view-heading">
+            <p class="eyebrow">Início</p>
+            <h1>Bem-vinda de volta, Joyce.</h1>
+            <p>Seu espaço para acompanhar aulas, materiais, atividades e feedbacks da Teacher Samilly.</p>
+          </div>
+
+          <div class="notification-list" data-notifications></div>
+          <div class="summary-grid" data-home-cards></div>
+        </section>
+
+        <section class="view" id="materials" data-view>
+          <div class="view-heading">
+            <p class="eyebrow">Materiais de estudo</p>
+            <h1>Conteúdos selecionados para sua rotina.</h1>
+          </div>
+
+          <div class="material-grid" data-materials-list></div>
+        </section>
+
+        <section class="view" id="tasks" data-view>
+          <div class="view-heading">
+            <p class="eyebrow">Atividades / lições</p>
+            <h1>Próximas entregas e práticas sugeridas.</h1>
+          </div>
+
+          <div class="panel-list" data-tasks-list></div>
+        </section>
+
+        <section class="view" id="feedback" data-view>
+          <div class="view-heading">
+            <p class="eyebrow">Feedback e acompanhamento</p>
+            <h1>Seu progresso em detalhes.</h1>
+          </div>
+
+          <div class="feedback-layout">
+            <div class="feedback-score-card" data-skill-ratings></div>
+            <div class="panel-list" data-feedback-list></div>
+          </div>
+        </section>
+
+        <section class="view" id="schedule" data-view>
+          <div class="view-heading">
+            <p class="eyebrow">Agenda</p>
+            <h1>Horários, aulas marcadas e detalhes.</h1>
+          </div>
+
+          <div class="agenda-layout">
+            <div class="panel-list" data-schedule-list></div>
+            <aside class="class-detail" data-class-detail>
+              <span class="panel-label">Aula selecionada</span>
+              <h3>Selecione uma aula marcada</h3>
+              <p>Ao clicar em uma aula, você verá horário, link do Meet e materiais.</p>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="profile" data-view>
+          <div class="view-heading">
+            <p class="eyebrow">Minhas informações</p>
+            <h1>Dados do seu plano e acompanhamento.</h1>
+          </div>
+
+          <div class="profile-grid" data-profile-info></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="student.js" defer></script>
+  </body>
+</html>

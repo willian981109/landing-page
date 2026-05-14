@@ -1,0 +1,254 @@
+
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Aulas de inglês personalizadas com foco em confiança, conversação e progresso real."
+    />
+    <title>Learn English with Confidence | English Teacher</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="site-header" data-header>
+      <a class="brand" href="#hero" aria-label="Voltar ao início">
+        <span class="brand__mark">E</span>
+        <span class="brand__text">English Studio</span>
+      </a>
+
+      <button class="nav-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" data-nav-toggle>
+        <span></span>
+        <span></span>
+      </button>
+
+      <nav class="site-nav" data-nav>
+        <a href="#word">Word of the Day</a>
+        <a href="#classes">Classes</a>
+        <a href="#contact">Contact</a>
+      </nav>
+
+      <div class="student-access" data-student-access>
+        <button
+          class="student-menu-toggle"
+          type="button"
+          aria-label="Abrir acesso à área do aluno"
+          aria-expanded="false"
+          data-student-menu-toggle
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <div class="student-dropdown" data-student-dropdown>
+          <button class="student-dropdown__link" type="button" data-student-login-open>
+            Área do aluno
+          </button>
+
+          <form class="student-login" data-student-login-form hidden>
+            <label>
+              <span>Email</span>
+              <input type="email" name="email" autocomplete="email" required />
+            </label>
+
+            <label>
+              <span>Senha</span>
+              <input type="password" name="password" autocomplete="current-password" required />
+            </label>
+
+            <button class="button button--primary student-login__submit" type="submit">
+              Login
+            </button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" id="hero" aria-label="Apresentação">
+        <div class="hero__overlay"></div>
+        <div class="hero__content reveal">
+          <h1>Teacher Samilly</h1>
+          <p class="hero__role">English Teacher</p>
+          <p class="hero__subtitle">Aprenda com autonomia, mas não se sinta sozinha/o.</p>
+          <div class="hero__actions">
+            <a class="button button--primary" href="#classes">View Classes</a>
+            <a class="button button--ghost" href="#contact">Contact</a>
+          </div>
+        </div>
+
+        <a class="scroll-cue" href="#word" aria-label="Rolar para a próxima seção">
+          <span></span>
+        </a>
+      </section>
+
+      <section class="word-section section" id="word">
+        <div class="section__inner reveal">
+          <p class="eyebrow">Word of the Day</p>
+          <div class="word-card">
+            <h2>Graceful</h2>
+            <p class="word-card__phonetic">/&#712;&#609;re&#618;s.f&#601;l/</p>
+            <p class="word-card__meaning">que demonstra eleg&acirc;ncia, leveza e delicadeza</p>
+            <p class="word-card__example">
+              “She gave a graceful answer during the meeting.”
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="teacher-section section" id="about">
+        <div class="section__inner teacher-section__inner">
+          <div class="teacher-section__photo reveal">
+            <img
+              src="https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=900&q=82"
+              alt="Teacher Samilly"
+            />
+          </div>
+
+          <div class="teacher-section__content reveal">
+            <p class="eyebrow">About the Teacher and the Methodology</p>
+            <h2>Uma teacher para caminhar com você, sem pressa e sem julgamento</h2>
+            <p>
+              Teacher Samilly ensina inglês com uma abordagem humana, clara e estratégica. Sua
+              experiência em aulas particulares ajuda cada aluna/o a entender onde está, o que
+              precisa desenvolver e como transformar o estudo em uma rotina possível.
+            </p>
+            <p>
+              A metodologia combina conversação guiada, construção de vocabulário, pronúncia,
+              escuta ativa e autonomia. Cada aula respeita o ritmo da pessoa, mas mantém direção,
+              prática e acompanhamento para que o inglês deixe de parecer distante.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="classes section section--cream" id="classes">
+        <div class="section__inner">
+          <div class="section-heading reveal">
+            <p class="eyebrow">Pacotes e Aulas</p>
+            <h2>Escolha o formato que combina com o seu momento</h2>
+            <p>
+              Aulas de inglês com direção, acolhimento e prática real para você evoluir com
+              segurança.
+            </p>
+          </div>
+
+          <div class="service-grid">
+            <article class="service-card reveal">
+              <span class="service-card__label">01</span>
+              <h3>Plano personalizado + aula semanal</h3>
+              <p class="service-card__summary">
+                Um acompanhamento sob medida para criar constância e autonomia no inglês.
+              </p>
+              <p>
+                Funciona com uma aula semanal ao vivo, plano de estudos individual e atividades
+                direcionadas entre os encontros.
+              </p>
+              <div class="service-card__price">Valores sob consulta</div>
+              <a class="button button--dark service-card__link" href="/packages.html">Saiba mais</a>
+            </article>
+
+            <article class="service-card reveal">
+              <span class="service-card__label">02</span>
+              <h3>Aula tradicional</h3>
+              <p class="service-card__summary">
+                Aulas particulares para aprender, revisar ou destravar pontos específicos.
+              </p>
+              <p>
+                Você agenda seus encontros conforme sua necessidade e trabalha gramática,
+                vocabulário, pronúncia e comunicação com orientação da teacher.
+              </p>
+              <div class="service-card__price">Valores sob consulta</div>
+              <a class="button button--dark service-card__link" href="/aulas.html">Saiba mais</a>
+            </article>
+
+            <article class="service-card reveal">
+              <span class="service-card__label">03</span>
+              <h3>Conversação e imersão</h3>
+              <p class="service-card__summary">
+                Prática intensiva para ganhar fluência, naturalidade e confiança ao falar.
+              </p>
+              <p>
+                Os encontros simulam situações reais, com correções leves, expansão de
+                vocabulário e treino de escuta ativa.
+              </p>
+              <div class="service-card__price">Valores sob consulta</div>
+              <a class="button button--dark service-card__link" href="/aulas.html">Saiba mais</a>
+            </article>
+          </div>
+
+          <div class="packages-cta reveal">
+            <a
+              class="button button--primary"
+              href="https://wa.me/5500000000000?text=Ol%C3%A1%2C%20quero%20saber%20mais%20e%20agendar%20minha%20aula%20experimental%20gratuita."
+              target="_blank"
+              rel="noreferrer"
+            >
+              Saiba mais e agende sua aula experimental gratuita
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="trial-section section" id="trial">
+        <div class="section__inner trial-section__inner">
+          <div class="trial-section__media reveal" aria-hidden="true">
+            <img
+              src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=82"
+              alt=""
+            />
+          </div>
+
+          <div class="trial-section__content reveal">
+            <p class="eyebrow">Primeiro passo</p>
+            <h2>Aula experimental e avaliação de nível gratuita</h2>
+            <p>
+              Em um encontro inicial de aproximadamente 30 minutos, a Teacher Samilly entende sua
+              rotina, seus objetivos e seu nível atual de inglês. A conversa ajuda a identificar
+              pontos fortes, bloqueios e prioridades, para que o plano de estudos comece com
+              clareza, direção e acolhimento.
+            </p>
+            <a
+              class="button button--primary"
+              href="https://wa.me/5500000000000?text=Ol%C3%A1%2C%20quero%20agendar%20minha%20aula%20experimental%20e%20avalia%C3%A7%C3%A3o%20de%20n%C3%ADvel%20gratuita."
+              target="_blank"
+              rel="noreferrer"
+            >
+              Agendar no WhatsApp
+            </a>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="site-footer" id="contact">
+      <div class="site-footer__inner">
+        <div>
+          <a class="brand brand--footer" href="#hero">
+            <span class="brand__mark">E</span>
+            <span class="brand__text">English Studio</span>
+          </a>
+          <p>Aulas de inglês com elegância, método e acolhimento.</p>
+        </div>
+
+        <address>
+          <a href="https://wa.me/5500000000000" target="_blank" rel="noreferrer">WhatsApp</a>
+          <a href="mailto:hello@englishstudio.com">hello@englishstudio.com</a>
+          <a href="#" aria-label="Instagram">Instagram</a>
+        </address>
+      </div>
+    </footer>
+
+    <script src="script.js" defer></script>
+  </body>
+</html>
