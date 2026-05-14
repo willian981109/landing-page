@@ -302,6 +302,32 @@ h3 {
   gap: 1rem;
 }
 
+.activity-dashboard {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 1rem;
+}
+
+.activity-metric {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--line);
+  box-shadow: 0 16px 48px rgba(20, 36, 27, 0.08);
+  padding: 1rem;
+}
+
+.activity-metric .panel-label {
+  margin-bottom: 0.45rem;
+}
+
+.activity-metric strong {
+  color: var(--green-900);
+  display: block;
+  font-family: var(--serif);
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  line-height: 1;
+}
+
 .lesson-card {
   display: grid;
   gap: 1rem;
@@ -378,6 +404,12 @@ h3 {
   transform: translateY(-1px);
 }
 
+.reschedule-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+}
+
 .feedback-card time {
   color: var(--olive);
   display: block;
@@ -432,6 +464,15 @@ h3 {
   gap: 1.3rem;
 }
 
+.activity-card.is-expanded {
+  border-color: rgba(194, 164, 111, 0.58);
+  box-shadow: var(--shadow);
+}
+
+.activity-card--concluida {
+  background: rgba(255, 255, 255, 0.68);
+}
+
 .activity-card .status {
   margin-bottom: 1rem;
 }
@@ -441,6 +482,40 @@ h3 {
   display: grid;
   gap: 1rem;
   padding-top: 1rem;
+}
+
+.activity-details {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 1rem;
+  grid-column: 1 / -1;
+  padding-top: 1rem;
+}
+
+.activity-details p,
+.activity-empty {
+  color: var(--muted);
+  margin-bottom: 0;
+}
+
+.activity-materials {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.activity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.activity-feedback {
+  background: rgba(31, 61, 43, 0.08);
+  border: 1px solid rgba(31, 61, 43, 0.18);
+  color: var(--green-900);
+  font-weight: 800;
+  margin: 0;
+  padding: 0.9rem 1rem;
 }
 
 .attachment-list {
@@ -454,7 +529,7 @@ h3 {
   border: 1px solid var(--line);
   display: grid;
   gap: 0.8rem;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   padding: 0.85rem;
   transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
@@ -489,6 +564,7 @@ h3 {
 }
 
 .attachment-item__icon--link,
+.attachment-item__icon--docs,
 .attachment-item__icon--audio,
 .attachment-item__icon--video {
   background: var(--olive);
@@ -512,6 +588,17 @@ h3 {
 
 .attachment-item__content small {
   margin-top: 0.2rem;
+}
+
+.attachment-item__action {
+  border: 1px solid var(--gold);
+  color: var(--green-900);
+  font-size: 0.72rem;
+  font-weight: 800;
+  justify-self: end;
+  min-height: 2.3rem;
+  padding: 0.5rem 0.75rem;
+  text-transform: uppercase;
 }
 
 .activity-card__complete {
@@ -707,6 +794,20 @@ h3 {
 }
 
 @media (max-width: 540px) {
+  .activity-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .attachment-item {
+    grid-template-columns: auto 1fr;
+  }
+
+  .attachment-item__action {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    text-align: center;
+  }
+
   .calendar-card,
   .schedule-day-panel {
     padding: 1rem;

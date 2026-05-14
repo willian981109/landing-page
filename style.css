@@ -142,6 +142,28 @@ img {
   z-index: 23;
 }
 
+.student-area-link {
+  align-items: center;
+  background: var(--green-900);
+  border: 1px solid var(--green-900);
+  color: var(--white);
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 2.7rem;
+  padding: 0.72rem 1rem;
+  position: relative;
+  text-transform: uppercase;
+  transition: background 180ms ease, transform 180ms ease;
+  z-index: 23;
+}
+
+.student-area-link:hover {
+  background: var(--green-800);
+  transform: translateY(-1px);
+}
+
 .student-menu-toggle {
   align-items: center;
   background: rgba(255, 255, 255, 0.38);

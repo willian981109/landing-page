@@ -222,6 +222,38 @@ h3 {
   font-weight: 800;
 }
 
+.auth-tabs {
+  background: rgba(245, 245, 240, 0.84);
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: repeat(2, 1fr);
+  padding: 0.35rem;
+}
+
+.auth-tab {
+  background: transparent;
+  border: 0;
+  color: var(--green-900);
+  font-size: 0.78rem;
+  font-weight: 800;
+  min-height: 2.7rem;
+  text-transform: uppercase;
+}
+
+.auth-tab.active {
+  background: var(--green-900);
+  color: var(--white);
+}
+
+.auth-panel {
+  display: grid;
+}
+
+.auth-panel[hidden] {
+  display: none;
+}
+
 .assignment-form :disabled {
   cursor: not-allowed;
 }
@@ -231,8 +263,7 @@ h3 {
   gap: 0.45rem;
 }
 
-.field span,
-.recipient-field legend {
+.field span {
   color: rgba(31, 61, 43, 0.78);
   font-size: 0.78rem;
   font-weight: 800;
@@ -241,7 +272,8 @@ h3 {
 }
 
 .field input,
-.field textarea {
+.field textarea,
+.field select {
   background: rgba(245, 245, 240, 0.72);
   border: 1px solid rgba(31, 61, 43, 0.16);
   color: var(--ink);
@@ -266,30 +298,26 @@ h3 {
 }
 
 .field input:focus,
-.field textarea:focus {
+.field textarea:focus,
+.field select:focus {
   background: var(--white);
   border-color: rgba(194, 164, 111, 0.8);
   box-shadow: 0 0 0 3px rgba(194, 164, 111, 0.16);
 }
 
-.recipient-field {
-  border: 0;
-  display: grid;
-  gap: 0.7rem;
-  margin: 1rem 0 0;
-  padding: 0;
+.field-status {
+  color: var(--muted);
+  font-size: 0.82rem;
 }
 
-.recipient-field label {
-  align-items: center;
-  color: var(--green-900);
-  display: flex;
-  gap: 0.55rem;
+.field-status.is-error {
+  color: #7a3e2f;
   font-weight: 700;
 }
 
-.recipient-field input {
-  accent-color: var(--green-900);
+.student-select-field {
+  animation: fadeUp 180ms ease both;
+  margin-top: 1rem;
 }
 
 .publish-button,
@@ -442,12 +470,12 @@ h3 {
   width: 2.6rem;
 }
 
-.material-item__icon--pdf,
-.material-item__icon--upload {
+.material-item__icon--pdf {
   background: #7a3e2f;
 }
 
 .material-item__icon--link,
+.material-item__icon--docs,
 .material-item__icon--audio,
 .material-item__icon--video {
   background: var(--olive);
@@ -462,9 +490,14 @@ h3 {
   color: var(--green-900);
 }
 
-.material-item__content span {
+.material-item__content span,
+.material-item__content small {
   color: var(--muted);
   font-size: 0.84rem;
+}
+
+.material-item__content small {
+  overflow-wrap: anywhere;
 }
 
 .remove-material {

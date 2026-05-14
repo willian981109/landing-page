@@ -111,10 +111,153 @@ const studentData = {
 const navItems = document.querySelectorAll("[data-view-target]");
 const views = document.querySelectorAll("[data-view]");
 const API_BASE_URL = "http://localhost:3000";
+const STUDENT_TOKEN_KEY = "englishStudioStudentToken";
+const STUDENT_USER_KEY = "englishStudioStudentUser";
+const studentName = document.querySelector("[data-student-name]");
+const homeTitle = document.querySelector("[data-home-title]");
+const logoutButton = document.querySelector("[data-student-logout]");
 const scheduleState = {
   selectedDay: studentData.schedule.selectedDay,
   selectedSlotIndex: null,
 };
+const activityState = {
+  items: [],
+  expandedId: null,
+  feedback: "",
+};
+
+function getStudentToken() {
+  return localStorage.getItem(STUDENT_TOKEN_KEY);
+}
+
+function clearStudentSession() {
+  localStorage.removeItem(STUDENT_TOKEN_KEY);
+  localStorage.removeItem(STUDENT_USER_KEY);
+}
+
+function getStoredStudent() {
+  try {
+    return JSON.parse(localStorage.getItem(STUDENT_USER_KEY));
+  } catch (error) {
+    return null;
+  }
+}
+
+function getTokenPayload(token) {
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch (error) {
+    return null;
+  }
+}
+
+function isStudentTokenValid(token) {
+  const payload = getTokenPayload(token);
+  const expiresAt = payload?.exp ? payload.exp * 1000 : 0;
+
+  return Boolean(payload?.role === "student" && expiresAt > Date.now());
+}
+
+function requireStudentSession() {
+  const token = getStudentToken();
+  const user = getStoredStudent();
+
+  if (token && user?.role === "student" && isStudentTokenValid(token)) {
+    studentName.textContent = user.name;
+    homeTitle.textContent = `Bem-vinda/o de volta, ${user.name}.`;
+    return true;
+  }
+
+  clearStudentSession();
+  window.location.href = "login.html";
+  return false;
+}
+
+function redirectToLogin() {
+  clearStudentSession();
+  window.location.href = "login.html";
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+async function fetchStudentApi(path, options = {}) {
+  const token = getStudentToken();
+
+  if (!token) {
+    redirectToLogin();
+    return null;
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
+    },
+  });
+
+  if (response.status === 401 || response.status === 403) {
+    redirectToLogin();
+    return null;
+  }
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || "Não foi possível concluir a ação.");
+  }
+
+  return data;
+}
+
+function getActivityStatusLabel(status) {
+  const labels = {
+    pending: "Pendente",
+    in_progress: "Em andamento",
+    completed: "Concluída",
+  };
+
+  return labels[status] || "Pendente";
+}
+
+function getMaterialLabel(type) {
+  const labels = {
+    docs: "Google Docs",
+    pdf: "PDF",
+    audio: "Áudio",
+    video: "Vídeo",
+    link: "Link externo",
+  };
+
+  return labels[type] || "Material";
+}
+
+function getMaterialIcon(type) {
+  const icons = {
+    docs: "DOC",
+    pdf: "PDF",
+    audio: "AUD",
+    video: "VID",
+    link: "URL",
+  };
+
+  return icons[type] || "MAT";
+}
+
+function summarizeText(text, maxLength = 132) {
+  if (!text || text.length <= maxLength) {
+    return text || "";
+  }
+
+  return `${text.slice(0, maxLength).trim()}...`;
+}
 
 function setActiveView(viewId) {
   views.forEach((view) => {
@@ -200,7 +343,160 @@ function formatActivityDate(value) {
   });
 }
 
-async function renderTasks() {
+function renderActivityDashboard() {
+  const container = document.querySelector("[data-activity-dashboard]");
+
+  if (!container) {
+    return;
+  }
+
+  const totals = activityState.items.reduce(
+    (accumulator, activity) => {
+      accumulator.total += 1;
+      accumulator[activity.status] = (accumulator[activity.status] || 0) + 1;
+      return accumulator;
+    },
+    { total: 0, pending: 0, in_progress: 0, completed: 0 }
+  );
+
+  container.innerHTML = `
+    <article class="activity-metric">
+      <span class="panel-label">Pendentes</span>
+      <strong>${totals.pending}</strong>
+    </article>
+    <article class="activity-metric">
+      <span class="panel-label">Em andamento</span>
+      <strong>${totals.in_progress}</strong>
+    </article>
+    <article class="activity-metric">
+      <span class="panel-label">Concluídas</span>
+      <strong>${totals.completed}</strong>
+    </article>
+  `;
+}
+
+function renderActivityMaterials(materials = []) {
+  if (!materials.length) {
+    return `<p class="activity-empty">Nenhum material anexado nesta atividade.</p>`;
+  }
+
+  return `
+    <div class="activity-materials">
+      ${materials
+        .map(
+          (material) => `
+            <article class="attachment-item attachment-item--primary">
+              <span class="attachment-item__icon attachment-item__icon--${escapeHtml(material.type)}">
+                ${getMaterialIcon(material.type)}
+              </span>
+              <div class="attachment-item__content">
+                <strong>${escapeHtml(material.title)}</strong>
+                <span>${getMaterialLabel(material.type)}</span>
+              </div>
+              <a class="attachment-item__action" href="${escapeHtml(material.url)}" target="_blank" rel="noreferrer">
+                Acessar
+              </a>
+            </article>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderActivityDetails(activity) {
+  return `
+    <div class="activity-details">
+      <div>
+        <span class="panel-label">Descrição completa</span>
+        <p>${escapeHtml(activity.description)}</p>
+      </div>
+      <div>
+        <span class="panel-label">Materiais da atividade</span>
+        ${renderActivityMaterials(activity.materials)}
+      </div>
+      <div class="activity-actions">
+        <button
+          class="reschedule-button"
+          type="button"
+          data-complete-activity="${activity.id}"
+          ${activity.status === "completed" ? "disabled" : ""}
+        >
+          ${activity.status === "completed" ? "Atividade concluída" : "Marcar como concluída"}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderTasks() {
+  const container = document.querySelector("[data-tasks-list]");
+
+  renderActivityDashboard();
+
+  if (activityState.feedback) {
+    window.setTimeout(() => {
+      activityState.feedback = "";
+      renderTasks();
+    }, 2600);
+  }
+
+  if (!activityState.items.length) {
+    container.innerHTML = `
+      <article class="activity-card">
+        <div>
+          <span class="status status--disponivel">Sem atividades</span>
+          <h3>Nenhuma atividade publicada</h3>
+          <p>Quando a professora criar uma atividade, ela aparecerá aqui.</p>
+        </div>
+      </article>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    ${activityState.feedback ? `<p class="activity-feedback">${escapeHtml(activityState.feedback)}</p>` : ""}
+    ${activityState.items
+      .map((activity) => {
+        const statusLabel = getActivityStatusLabel(activity.status);
+        const isExpanded = activityState.expandedId === activity.id;
+
+        return `
+          <article class="activity-card activity-card--${getStatusClass(statusLabel)} ${isExpanded ? "is-expanded" : ""}">
+            <div>
+              <span class="status status--${getStatusClass(statusLabel)}">${statusLabel}</span>
+              <h3>${escapeHtml(activity.title)}</h3>
+              <p>${escapeHtml(summarizeText(activity.description))}</p>
+            </div>
+            <div class="activity-card__meta">
+              <p><span class="panel-label">Prazo</span><strong>${formatActivityDate(activity.deadline)}</strong></p>
+              <p><span class="panel-label">Pontuação</span><strong>${activity.points} pontos</strong></p>
+              <p><span class="panel-label">Materiais</span><strong>${activity.materials?.length || 0} anexos</strong></p>
+              <button class="reschedule-button" type="button" data-open-activity="${activity.id}">
+                ${isExpanded ? "Fechar atividade" : "Ver atividade"}
+              </button>
+            </div>
+            ${isExpanded ? renderActivityDetails(activity) : ""}
+          </article>
+        `;
+      })
+      .join("")}
+  `;
+
+  container.querySelectorAll("[data-open-activity]").forEach((button) => {
+    button.addEventListener("click", () => {
+      toggleActivityDetails(button.dataset.openActivity);
+    });
+  });
+
+  container.querySelectorAll("[data-complete-activity]").forEach((button) => {
+    button.addEventListener("click", () => {
+      completeActivity(button.dataset.completeActivity);
+    });
+  });
+}
+
+async function loadActivities() {
   const container = document.querySelector("[data-tasks-list]");
 
   container.innerHTML = `
@@ -208,60 +504,77 @@ async function renderTasks() {
       <div>
         <span class="status status--em-andamento">Carregando</span>
         <h3>Buscando atividades</h3>
-        <p>Aguarde enquanto carregamos as atividades publicadas pela professora.</p>
+        <p>Aguarde enquanto carregamos suas atividades.</p>
       </div>
     </article>
   `;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/activities`);
-
-    if (!response.ok) {
-      throw new Error("Não foi possível carregar as atividades.");
-    }
-
-    const activities = await response.json();
-
-    if (!activities.length) {
-      container.innerHTML = `
-        <article class="activity-card">
-          <div>
-            <span class="status status--disponivel">Sem atividades</span>
-            <h3>Nenhuma atividade publicada</h3>
-            <p>Quando a professora criar uma atividade, ela aparecerá aqui.</p>
-          </div>
-        </article>
-      `;
-      return;
-    }
-
-    container.innerHTML = activities
-      .map(
-        (activity) => `
-          <article class="activity-card">
-            <div>
-              <span class="status status--em-andamento">Atividade</span>
-              <h3>${activity.title}</h3>
-              <p>${activity.description}</p>
-            </div>
-            <div class="activity-card__meta">
-              <p><span class="panel-label">Prazo</span><strong>${formatActivityDate(activity.deadline)}</strong></p>
-              <p><span class="panel-label">Pontuação</span><strong>${activity.points} pontos</strong></p>
-            </div>
-          </article>
-        `
-      )
-      .join("");
+    activityState.items = await fetchStudentApi("/my-activities");
+    renderTasks();
   } catch (error) {
+    console.error("Erro ao carregar atividades do aluno:", error);
     container.innerHTML = `
       <article class="activity-card">
         <div>
           <span class="status status--pendente">Erro</span>
           <h3>Atividades indisponíveis</h3>
-          <p>${error.message}</p>
+          <p>${escapeHtml(error.message)}</p>
         </div>
       </article>
     `;
+  }
+}
+
+function replaceActivity(updatedActivity) {
+  activityState.items = activityState.items.map((activity) =>
+    activity.id === updatedActivity.id ? updatedActivity : activity
+  );
+}
+
+async function toggleActivityDetails(activityId) {
+  if (activityState.expandedId === activityId) {
+    activityState.expandedId = null;
+    renderTasks();
+    return;
+  }
+
+  const activity = activityState.items.find((item) => item.id === activityId);
+
+  try {
+    if (activity?.status === "pending") {
+      const updatedActivity = await fetchStudentApi(`/my-activities/${activityId}/in-progress`, {
+        method: "PATCH",
+      });
+      replaceActivity(updatedActivity);
+    } else {
+      const fullActivity = await fetchStudentApi(`/my-activities/${activityId}`);
+      replaceActivity(fullActivity);
+    }
+
+    activityState.expandedId = activityId;
+    renderTasks();
+  } catch (error) {
+    console.error("Erro ao abrir atividade:", error);
+    activityState.feedback = error.message;
+    renderTasks();
+  }
+}
+
+async function completeActivity(activityId) {
+  try {
+    const updatedActivity = await fetchStudentApi(`/my-activities/${activityId}/complete`, {
+      method: "PATCH",
+    });
+
+    replaceActivity(updatedActivity);
+    activityState.expandedId = activityId;
+    activityState.feedback = "Atividade marcada como concluída.";
+    renderTasks();
+  } catch (error) {
+    console.error("Erro ao concluir atividade:", error);
+    activityState.feedback = error.message;
+    renderTasks();
   }
 }
 
@@ -488,8 +801,20 @@ function renderSchedule() {
 
 function renderProfile() {
   const container = document.querySelector("[data-profile-info]");
+  const user = getStoredStudent();
+  const profileItems = user
+    ? [
+        ["Nome", user.name],
+        ["Email", user.email],
+        ["Plano", "Em configuração"],
+        ["Aulas feitas", "Em acompanhamento"],
+        ["Valores", "Sob consulta"],
+        ["Horário fixo", "A combinar"],
+        ["Nível do aluno", "Em avaliação"],
+      ]
+    : studentData.profile;
 
-  container.innerHTML = studentData.profile
+  container.innerHTML = profileItems
     .map(
       ([label, value]) => `
         <article class="profile-card">
@@ -509,11 +834,18 @@ function setupNavigation() {
   });
 }
 
-renderNotifications();
-renderHome();
-renderMaterials();
-renderTasks();
-renderFeedback();
-renderSchedule();
-renderProfile();
-setupNavigation();
+logoutButton.addEventListener("click", () => {
+  clearStudentSession();
+  window.location.href = "login.html";
+});
+
+if (requireStudentSession()) {
+  renderNotifications();
+  renderHome();
+  renderMaterials();
+  loadActivities();
+  renderFeedback();
+  renderSchedule();
+  renderProfile();
+  setupNavigation();
+}

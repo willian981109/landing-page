@@ -4,15 +4,15 @@ const materialTypes = {
     icon: "URL",
     placeholder: "https://...",
   },
-  doc: {
+  docs: {
     label: "Google Docs",
     icon: "DOC",
     placeholder: "https://docs.google.com/document/...",
   },
-  upload: {
-    label: "Upload simulado",
+  pdf: {
+    label: "PDF",
     icon: "PDF",
-    placeholder: "Nome do arquivo ou referência simulada",
+    placeholder: "https://... ou referência do PDF",
   },
   audio: {
     label: "Áudio",
@@ -41,6 +41,8 @@ const cancelMaterialButton = document.querySelector("[data-cancel-material]");
 const materialList = document.querySelector("[data-material-list]");
 const emptyMaterials = document.querySelector("[data-empty-materials]");
 const successMessage = document.querySelector("[data-success-message]");
+const studentSelect = document.querySelector("[data-student-select]");
+const studentStatus = document.querySelector("[data-student-status]");
 
 const materials = [];
 let selectedMaterialKind = "link";
@@ -50,7 +52,7 @@ const ADMIN_TOKEN_KEY = "englishStudioAdminToken";
 const ADMIN_USER_KEY = "englishStudioAdminUser";
 
 function getAssignmentControls() {
-  return form.querySelectorAll("input, textarea, button");
+  return form.querySelectorAll("input, textarea, select, button");
 }
 
 function getAdminToken() {
@@ -123,11 +125,98 @@ function requireTeacherSession() {
     const user = getAdminUser();
     adminGreeting.textContent = `Conectada como ${user?.name || "professora"}. Crie atividades e gerencie conteúdos do painel administrativo.`;
     setAdminAreaLocked(false);
-    return;
+    return true;
   }
 
   clearAdminSession();
   window.location.href = "admin-login.html";
+  return false;
+}
+
+function redirectToLogin(message) {
+  clearAdminSession();
+
+  if (message) {
+    alert(message);
+  }
+
+  window.location.href = "admin-login.html";
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function setStudentStatus(message, type = "") {
+  studentStatus.classList.remove("is-error");
+
+  if (type) {
+    studentStatus.classList.add(`is-${type}`);
+  }
+
+  studentStatus.textContent = message;
+}
+
+function renderStudentOptions(students) {
+  if (students.length === 0) {
+    studentSelect.innerHTML = '<option value="">Nenhum aluno cadastrado</option>';
+    setStudentStatus("Nenhum aluno cadastrado ainda.");
+    return;
+  }
+
+  studentSelect.innerHTML = [
+    '<option value="">Selecione um aluno</option>',
+    ...students.map(
+      (student) => `<option value="${student.id}">${escapeHtml(student.name)}</option>`
+    ),
+  ].join("");
+  setStudentStatus(`${students.length} aluno(s) encontrado(s).`);
+}
+
+async function loadStudents() {
+  const token = getAdminToken();
+
+  if (!token) {
+    studentSelect.innerHTML = '<option value="">Faça login novamente</option>';
+    setStudentStatus("Sessão inválida. Redirecionando para login...", "error");
+    window.location.href = "admin-login.html";
+    return;
+  }
+
+  studentSelect.innerHTML = '<option value="">Carregando alunos...</option>';
+  setStudentStatus("Buscando alunos cadastrados...");
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/students`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      clearAdminSession();
+      studentSelect.innerHTML = '<option value="">Faça login novamente</option>';
+      setStudentStatus("Sessão expirada. Redirecionando para login...", "error");
+      window.location.href = "admin-login.html";
+      return;
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || "Erro ao buscar alunos");
+    }
+
+    const students = await response.json();
+    renderStudentOptions(students);
+  } catch (error) {
+    console.error("Erro ao carregar alunos:", error);
+    studentSelect.innerHTML = '<option value="">Erro ao carregar alunos</option>';
+    setStudentStatus("Não foi possível carregar os alunos. Verifique se o backend está rodando e atualizado.", "error");
+  }
 }
 
 function closeMaterialOptions() {
@@ -177,16 +266,17 @@ function renderMaterials() {
 
   materialList.innerHTML = materials
     .map((material, index) => {
-      const materialType = materialTypes[material.kind];
+      const materialType = materialTypes[material.type];
 
       return `
         <article class="material-item">
-          <span class="material-item__icon material-item__icon--${material.kind}">
+          <span class="material-item__icon material-item__icon--${material.type}">
             ${materialType.icon}
           </span>
           <div class="material-item__content">
-            <strong>${material.title}</strong>
+            <strong>${escapeHtml(material.title)}</strong>
             <span>${materialType.label}</span>
+            <small>${escapeHtml(material.url)}</small>
           </div>
           <button class="remove-material" type="button" data-remove-material="${index}">
             Remover
@@ -206,17 +296,22 @@ function renderMaterials() {
 
 function addMaterial() {
   const title = materialTitleInput.value.trim();
-  const reference = materialUrlInput.value.trim();
+  const url = materialUrlInput.value.trim();
 
   if (!title) {
     materialTitleInput.focus();
     return;
   }
 
+  if (!url) {
+    materialUrlInput.focus();
+    return;
+  }
+
   materials.push({
+    type: selectedMaterialKind,
     title,
-    reference,
-    kind: selectedMaterialKind,
+    url,
   });
 
   closeMaterialDraft();
@@ -273,14 +368,27 @@ form.addEventListener("submit", async (event) => {
     description: formData.get("description"),
     deadline: formData.get("dueDate"),
     points: Number(formData.get("points") || 0),
+    materials: materials.map((material) => ({
+      type: material.type,
+      title: material.title,
+      url: material.url,
+    })),
   };
+  const selectedStudentId = formData.get("studentId");
   const token = getAdminToken();
 
   if (!token) {
-    clearAdminSession();
-    window.location.href = "admin-login.html";
+    redirectToLogin();
     return;
   }
+
+  if (!selectedStudentId) {
+    studentSelect.focus();
+    alert("Selecione um aluno para enviar a atividade.");
+    return;
+  }
+
+  payload.studentId = selectedStudentId;
 
   try {
     const response = await fetch(`${API_BASE_URL}/activities`, {
@@ -292,10 +400,8 @@ form.addEventListener("submit", async (event) => {
       body: JSON.stringify(payload),
     });
 
-    if (response.status === 401) {
-      clearAdminSession();
-      alert("Sua sessão expirou. Faça login novamente.");
-      window.location.href = "admin-login.html";
+    if (response.status === 401 || response.status === 403) {
+      redirectToLogin("Sua sessão expirou. Faça login novamente.");
       return;
     }
 
@@ -323,5 +429,7 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-requireTeacherSession();
-renderMaterials();
+if (requireTeacherSession()) {
+  loadStudents();
+  renderMaterials();
+}

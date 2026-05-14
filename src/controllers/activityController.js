@@ -23,6 +23,46 @@ async function list(req, res, next) {
   }
 }
 
+async function listMine(req, res, next) {
+  try {
+    const activities = await activityService.listStudentActivities(req.user.id);
+
+    return res.json(activities);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function getMine(req, res, next) {
+  try {
+    const activity = await activityService.getStudentActivity(req.params.id, req.user.id);
+
+    return res.json(activity);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function markMineInProgress(req, res, next) {
+  try {
+    const activity = await activityService.markStudentActivityInProgress(req.params.id, req.user.id);
+
+    return res.json(activity);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function completeMine(req, res, next) {
+  try {
+    const activity = await activityService.completeStudentActivity(req.params.id, req.user.id);
+
+    return res.json(activity);
+  } catch (error) {
+    return next(error);
+  }
+}
+
 async function update(req, res, next) {
   try {
     const activity = await activityService.updateActivity(req.params.id, {
@@ -49,6 +89,10 @@ async function remove(req, res, next) {
 module.exports = {
   create,
   list,
+  listMine,
+  getMine,
+  markMineInProgress,
+  completeMine,
   update,
   remove,
 };

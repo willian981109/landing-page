@@ -4,7 +4,6 @@ const jwt = require("jsonwebtoken");
 const { pool } = require("../database/pool");
 
 const SALT_ROUNDS = 10;
-const VALID_ROLES = ["teacher", "student"];
 
 function createAuthError(message, statusCode = 400) {
   const error = new Error(message);
@@ -35,13 +34,9 @@ function createToken(user) {
   );
 }
 
-function validateRegisterInput({ name, email, password, role }) {
-  if (!name || !email || !password || !role) {
-    throw createAuthError("Name, email, password and role are required");
-  }
-
-  if (!VALID_ROLES.includes(role)) {
-    throw createAuthError("Role must be teacher or student");
+function validateRegisterInput({ name, email, password }) {
+  if (!name || !email || !password) {
+    throw createAuthError("Name, email and password are required");
   }
 
   if (password.length < 6) {
@@ -55,8 +50,8 @@ function validateLoginInput({ email, password }) {
   }
 }
 
-async function registerUser({ name, email, password, role }) {
-  validateRegisterInput({ name, email, password, role });
+async function registerUser({ name, email, password }) {
+  validateRegisterInput({ name, email, password });
 
   const existingUser = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
 
@@ -65,6 +60,7 @@ async function registerUser({ name, email, password, role }) {
   }
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+  const role = "student";
   const result = await pool.query(
     `
       INSERT INTO users (name, email, password_hash, role)

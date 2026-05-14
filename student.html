@@ -25,8 +25,8 @@
         </a>
 
         <div class="student-header__meta">
-          <span>Welcome, Joyce</span>
-          <button class="logout-button" type="button">Logout</button>
+          <span data-student-name>Área do aluno</span>
+          <button class="logout-button" type="button" data-student-logout>Logout</button>
         </div>
       </header>
 
@@ -51,7 +51,7 @@
         <section class="view active" id="home" data-view>
           <div class="view-heading">
             <p class="eyebrow">Início</p>
-            <h1>Bem-vinda de volta, Joyce.</h1>
+            <h1 data-home-title>Bem-vinda/o de volta.</h1>
             <p>Seu espaço para acompanhar aulas, materiais, atividades e feedbacks da Teacher Samilly.</p>
           </div>
 
@@ -74,6 +74,7 @@
             <h1>Próximas entregas e práticas sugeridas.</h1>
           </div>
 
+          <div class="activity-dashboard" data-activity-dashboard></div>
           <div class="panel-list" data-tasks-list></div>
         </section>
 

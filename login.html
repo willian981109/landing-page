@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Login e cadastro de alunos no English Studio." />
+    <title>Área do Aluno | English Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="teacher-create-activity.css" />
+  </head>
+  <body>
+    <header class="teacher-header">
+      <a class="brand" href="index.html" aria-label="Voltar para a landing page">
+        <span class="brand__mark">E</span>
+        <span class="brand__text">English Studio</span>
+      </a>
+
+      <a class="header-link" href="admin-login.html">Área da Professora</a>
+    </header>
+
+    <main class="teacher-main admin-login-main">
+      <section class="view-heading">
+        <p class="eyebrow">Área do Aluno</p>
+        <h1>Entrar no seu painel</h1>
+        <p>Acesse suas atividades personalizadas, materiais e acompanhamento.</p>
+      </section>
+
+      <section class="form-card admin-login-panel">
+        <div class="auth-tabs" role="tablist" aria-label="Acesso do aluno">
+          <button class="auth-tab active" type="button" data-auth-tab="login">Entrar</button>
+          <button class="auth-tab" type="button" data-auth-tab="register">Criar conta</button>
+        </div>
+
+        <form class="admin-login-form auth-panel active" data-login-form>
+          <label class="field">
+            <span>Email</span>
+            <input type="email" name="email" autocomplete="email" required />
+          </label>
+
+          <label class="field">
+            <span>Senha</span>
+            <input type="password" name="password" autocomplete="current-password" required />
+          </label>
+
+          <button class="publish-button" type="submit">Entrar</button>
+        </form>
+
+        <form class="admin-login-form auth-panel" data-register-form hidden>
+          <label class="field">
+            <span>Nome</span>
+            <input type="text" name="name" autocomplete="name" required />
+          </label>
+
+          <label class="field">
+            <span>Email</span>
+            <input type="email" name="email" autocomplete="email" required />
+          </label>
+
+          <label class="field">
+            <span>Senha</span>
+            <input type="password" name="password" autocomplete="new-password" minlength="6" required />
+          </label>
+
+          <button class="publish-button" type="submit">Criar conta</button>
+        </form>
+
+        <p class="auth-status" data-auth-message></p>
+      </section>
+    </main>
+
+    <script src="login.js" defer></script>
+  </body>
+</html>

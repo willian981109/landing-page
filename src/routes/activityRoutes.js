@@ -6,9 +6,14 @@ const roleMiddleware = require("../middlewares/roleMiddleware");
 
 const router = Router();
 const teacherOnly = [authMiddleware, roleMiddleware(["teacher"])];
+const studentOnly = [authMiddleware, roleMiddleware(["student"])];
 
 router.post("/activities", teacherOnly, activityController.create);
 router.get("/activities", activityController.list);
+router.get("/my-activities", studentOnly, activityController.listMine);
+router.get("/my-activities/:id", studentOnly, activityController.getMine);
+router.patch("/my-activities/:id/in-progress", studentOnly, activityController.markMineInProgress);
+router.patch("/my-activities/:id/complete", studentOnly, activityController.completeMine);
 router.patch("/activities/:id", teacherOnly, activityController.update);
 router.delete("/activities/:id", teacherOnly, activityController.remove);
 

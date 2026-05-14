@@ -24,7 +24,7 @@
       </a>
 
       <div class="teacher-header__actions">
-        <a class="header-link" href="student.html">Área do aluno</a>
+        <a class="header-link" href="login.html">Área do aluno</a>
         <button class="logout-link" type="button" data-admin-logout>Sair</button>
       </div>
     </header>
@@ -55,6 +55,7 @@
               name="description"
               rows="7"
               placeholder="Explique o que o aluno deve fazer, quais materiais consultar e como entregar."
+              required
             ></textarea>
           </label>
         </section>
@@ -73,17 +74,13 @@
               <input type="number" name="points" min="0" step="1" placeholder="100 pontos" required />
             </label>
 
-            <fieldset class="recipient-field">
-              <legend>Destinatários</legend>
-              <label>
-                <input type="radio" name="recipient" value="Todos alunos" checked />
-                <span>Todos alunos</span>
-              </label>
-              <label>
-                <input type="radio" name="recipient" value="Aluno específico" />
-                <span>Aluno específico</span>
-              </label>
-            </fieldset>
+            <label class="field student-select-field">
+              <span>Selecionar aluno</span>
+              <select name="studentId" data-student-select required>
+                <option value="">Carregando alunos...</option>
+              </select>
+              <small class="field-status" data-student-status>Buscando alunos cadastrados...</small>
+            </label>
           </section>
 
           <button class="publish-button" type="submit">Publicar atividade</button>
@@ -108,8 +105,8 @@
               </button>
               <div class="material-options" data-material-options>
                 <button type="button" data-material-kind="link">Inserir link</button>
-                <button type="button" data-material-kind="doc">Documento (Google Docs)</button>
-                <button type="button" data-material-kind="upload">Upload (simulado)</button>
+                <button type="button" data-material-kind="docs">Documento (Google Docs)</button>
+                <button type="button" data-material-kind="pdf">PDF</button>
                 <button type="button" data-material-kind="audio">Áudio</button>
                 <button type="button" data-material-kind="video">Vídeo</button>
               </div>
