@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Tela da professora para criar atividades com materiais, prazo e destinatários."
+    />
+    <title>Criar atividade | English Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="teacher-create-activity.css" />
+  </head>
+  <body>
+    <header class="teacher-header">
+      <a class="brand" href="index.html" aria-label="Voltar para a landing page">
+        <span class="brand__mark">E</span>
+        <span class="brand__text">English Studio</span>
+      </a>
+
+      <a class="header-link" href="student.html">Área do aluno</a>
+    </header>
+
+    <main class="teacher-main">
+      <section class="view-heading">
+        <p class="eyebrow">Professora</p>
+        <h1>Criar atividade</h1>
+        <p>Monte uma tarefa com instruções, materiais e prazo para publicar aos alunos.</p>
+      </section>
+
+      <form class="assignment-form" data-assignment-form>
+        <section class="form-card form-card--main">
+          <label class="field field--title">
+            <span>Título</span>
+            <input
+              type="text"
+              name="title"
+              placeholder="Ex: Listening: daily routine"
+              autocomplete="off"
+              required
+            />
+          </label>
+
+          <label class="field">
+            <span>Descrição</span>
+            <textarea
+              name="description"
+              rows="7"
+              placeholder="Explique o que o aluno deve fazer, quais materiais consultar e como entregar."
+            ></textarea>
+          </label>
+        </section>
+
+        <aside class="form-sidebar">
+          <section class="form-card">
+            <span class="panel-label">Configurações</span>
+
+            <label class="field">
+              <span>Prazo</span>
+              <input type="date" name="dueDate" />
+            </label>
+
+            <label class="field">
+              <span>Pontuação</span>
+              <input type="number" name="points" min="0" step="1" placeholder="100 pontos" />
+            </label>
+
+            <fieldset class="recipient-field">
+              <legend>Destinatários</legend>
+              <label>
+                <input type="radio" name="recipient" value="Todos alunos" checked />
+                <span>Todos alunos</span>
+              </label>
+              <label>
+                <input type="radio" name="recipient" value="Aluno específico" />
+                <span>Aluno específico</span>
+              </label>
+            </fieldset>
+          </section>
+
+          <button class="publish-button" type="submit">Publicar atividade</button>
+          <p class="success-message" data-success-message hidden>Atividade criada com sucesso</p>
+        </aside>
+
+        <section class="form-card materials-card">
+          <div class="materials-card__header">
+            <div>
+              <span class="panel-label">Anexos</span>
+              <h2>Materiais da atividade</h2>
+            </div>
+
+            <div class="material-menu" data-material-menu>
+              <button
+                class="secondary-button"
+                type="button"
+                aria-expanded="false"
+                data-material-toggle
+              >
+                Adicionar material
+              </button>
+              <div class="material-options" data-material-options>
+                <button type="button" data-material-kind="link">Inserir link</button>
+                <button type="button" data-material-kind="doc">Documento (Google Docs)</button>
+                <button type="button" data-material-kind="upload">Upload (simulado)</button>
+                <button type="button" data-material-kind="audio">Áudio</button>
+                <button type="button" data-material-kind="video">Vídeo</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="material-draft" data-material-draft hidden>
+            <div>
+              <span class="draft-type" data-draft-type>Link externo</span>
+              <h3>Novo material</h3>
+            </div>
+
+            <label class="field">
+              <span>Título do material</span>
+              <input type="text" data-material-title placeholder="Ex: Folha de respostas" />
+            </label>
+
+            <label class="field">
+              <span>Link ou referência</span>
+              <input type="text" data-material-url placeholder="https://..." />
+            </label>
+
+            <div class="draft-actions">
+              <button class="secondary-button" type="button" data-cancel-material>Cancelar</button>
+              <button class="publish-button publish-button--small" type="button" data-add-material>
+                Adicionar à atividade
+              </button>
+            </div>
+          </div>
+
+          <div class="empty-materials" data-empty-materials>
+            <p>Nenhum material adicionado ainda.</p>
+          </div>
+
+          <div class="material-list" data-material-list></div>
+        </section>
+      </form>
+    </main>
+
+    <script src="teacher-create-activity.js" defer></script>
+  </body>
+</html>

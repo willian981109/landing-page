@@ -52,34 +52,86 @@ const studentData = {
       description: "Ouça o áudio indicado e escreva 5 frases sobre a rotina da personagem.",
       due: "14/05/2026",
       status: "Pendente",
-      links: ["Áudio da atividade", "Folha de respostas"],
+      attachments: [
+        {
+          title: "Folha de respostas",
+          type: "Google Docs",
+          kind: "doc",
+          url: "https://docs.google.com/document/d/answer-sheet-demo/edit",
+          primary: true,
+        },
+        {
+          title: "Link da atividade",
+          type: "Link externo",
+          kind: "link",
+          url: "https://www.esl-lab.com/",
+        },
+        {
+          title: "Áudio da atividade",
+          type: "Áudio",
+          kind: "audio",
+          url: "https://www.esl-lab.com/easy/daily-schedule/",
+        },
+        {
+          title: "Material de apoio",
+          type: "PDF",
+          kind: "pdf",
+          url: "https://www.cambridgeenglish.org/Images/506886-a2-key-2020-vocabulary-list.pdf",
+        },
+      ],
     },
     {
       title: "Speaking practice",
       description: "Grave um áudio de 1 minuto contando como foi seu último fim de semana.",
       due: "17/05/2026",
       status: "Em andamento",
-      links: ["Modelo de roteiro"],
+      attachments: [
+        {
+          title: "Folha de respostas",
+          type: "Google Docs",
+          kind: "doc",
+          url: "https://docs.google.com/document/d/speaking-answer-sheet-demo/edit",
+          primary: true,
+        },
+        {
+          title: "Modelo de roteiro",
+          type: "PDF",
+          kind: "pdf",
+          url: "https://www.cambridgeenglish.org/Images/506886-a2-key-2020-vocabulary-list.pdf",
+        },
+        {
+          title: "Exemplo em vídeo",
+          type: "Vídeo",
+          kind: "video",
+          url: "https://www.youtube.com/results?search_query=english+speaking+practice+past+simple",
+        },
+      ],
     },
     {
       title: "Vocabulary review",
       description: "Revisar 20 palavras novas e criar frases próprias com 10 delas.",
       due: "Concluída em 10/05/2026",
       status: "Concluída",
-      links: ["Lista de vocabulário"],
+      attachments: [
+        {
+          title: "Folha de respostas",
+          type: "Google Docs",
+          kind: "doc",
+          url: "https://docs.google.com/document/d/vocabulary-answer-sheet-demo/edit",
+          primary: true,
+        },
+        {
+          title: "Lista de vocabulário",
+          type: "PDF",
+          kind: "pdf",
+          url: "https://www.cambridgeenglish.org/Images/506886-a2-key-2020-vocabulary-list.pdf",
+        },
+      ],
     },
   ],
   feedback: {
-    comments:
-      "Você está participando mais das conversas e já consegue sustentar respostas um pouco mais longas.",
-    evolution:
-      "A evolução principal aparece na organização das frases e na confiança para iniciar respostas sem traduzir tudo antes.",
-    difficulties:
-      "Ainda há dificuldade com verbos irregulares no passado e com listening quando a fala está mais rápida.",
-    positives:
-      "Boa pronúncia em palavras novas, ótimo comprometimento com as atividades e mais naturalidade nas perguntas.",
-    recommendations:
-      "Praticar 10 minutos de escuta ativa por dia e revisar os verbos irregulares antes da próxima aula.",
+    teacherComment:
+      "Você tem evoluído bem na organização das frases e já demonstra mais confiança ao responder sem traduzir. Ainda há dificuldades com verbos irregulares e compreensão em falas mais rápidas, mas seu comprometimento, pronúncia e naturalidade nas perguntas estão cada vez melhores. Continue praticando com foco em listening, revisão do passado e construção de frases completas para ganhar mais segurança nas próximas conversas.",
     ratings: {
       Speaking: 4,
       Listening: 3,
@@ -87,36 +139,47 @@ const studentData = {
       Reading: 5,
     },
   },
-  schedule: [
-    {
-      date: "14/05/2026",
-      time: "19:00",
-      title: "Conversação guiada",
-      status: "Aula marcada",
-      meet: "https://meet.google.com/abc-defg-hij",
-      materials: ["PDF: perguntas para conversação", "Vídeo: Past Simple review"],
+  schedule: {
+    monthLabel: "Maio 2026",
+    year: 2026,
+    monthIndex: 4,
+    selectedDay: 14,
+    days: {
+      14: [
+        {
+          time: "19:00",
+          title: "Conversação guiada",
+          status: "Aula marcada",
+          meet: "https://meet.google.com/abc-defg-hij",
+          materials: ["PDF: perguntas para conversação", "Vídeo: Past Simple review"],
+        },
+      ],
+      16: [
+        {
+          time: "18:00",
+          title: "Horário disponível",
+          status: "Disponível",
+        },
+        {
+          time: "20:00",
+          title: "Horário disponível",
+          status: "Disponível",
+        },
+      ],
+      18: [
+        {
+          time: "18:00",
+          title: "Horário disponível",
+          status: "Disponível",
+        },
+        {
+          time: "20:00",
+          title: "Horário disponível",
+          status: "Disponível",
+        },
+      ],
     },
-    {
-      date: "16/05/2026",
-      time: "10:00",
-      title: "Horário disponível",
-      status: "Disponível",
-    },
-    {
-      date: "17/05/2026",
-      time: "18:00",
-      title: "Horário ocupado",
-      status: "Ocupado",
-    },
-    {
-      date: "21/05/2026",
-      time: "19:00",
-      title: "Revisão + speaking",
-      status: "Aula marcada",
-      meet: "https://meet.google.com/xyz-wxyz-klm",
-      materials: ["Lista de verbos irregulares", "Atividade de pronúncia"],
-    },
-  ],
+  },
   profile: [
     ["Nome", "Joyce Almeida"],
     ["Email", "joyce@email.com"],
@@ -130,6 +193,10 @@ const studentData = {
 
 const navItems = document.querySelectorAll("[data-view-target]");
 const views = document.querySelectorAll("[data-view]");
+const scheduleState = {
+  selectedDay: studentData.schedule.selectedDay,
+  selectedSlotIndex: null,
+};
 
 function setActiveView(viewId) {
   views.forEach((view) => {
@@ -197,12 +264,53 @@ function renderMaterials() {
     .join("");
 }
 
+function getAttachmentIcon(kind) {
+  const icons = {
+    doc: "DOC",
+    pdf: "PDF",
+    link: "URL",
+    audio: "AUD",
+    video: "VID",
+  };
+
+  return icons[kind] ?? "MAT";
+}
+
+function renderTaskAttachments(attachments) {
+  return attachments
+    .map(
+      (attachment) => `
+        <a
+          class="attachment-item ${attachment.primary ? "attachment-item--primary" : ""}"
+          href="${attachment.url}"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span class="attachment-item__icon attachment-item__icon--${attachment.kind}">
+            ${getAttachmentIcon(attachment.kind)}
+          </span>
+          <span class="attachment-item__content">
+            <strong>${attachment.title}</strong>
+            <span>${attachment.type}</span>
+            ${
+              attachment.primary
+                ? "<small>Este documento pode ser editado por você e pela professora.</small>"
+                : ""
+            }
+          </span>
+        </a>
+      `
+    )
+    .join("");
+}
+
 function renderTasks() {
   const container = document.querySelector("[data-tasks-list]");
 
   container.innerHTML = studentData.tasks
-    .map((task) => {
+    .map((task, index) => {
       const statusClass = getStatusClass(task.status);
+      const isCompleted = task.status === "Concluída";
 
       return `
         <article class="activity-card">
@@ -214,16 +322,31 @@ function renderTasks() {
           <div class="activity-card__meta">
             <p><span class="panel-label">Prazo</span><strong>${task.due}</strong></p>
             <div>
-              <span class="panel-label">Links</span>
-              <div class="inline-links">
-                ${task.links.map((link) => `<a href="#">${link}</a>`).join("")}
+              <span class="panel-label">Materiais da atividade</span>
+              <div class="attachment-list">
+                ${renderTaskAttachments(task.attachments)}
               </div>
             </div>
+            ${
+              isCompleted
+                ? '<p class="activity-card__done">Atividade concluída.</p>'
+                : `<button class="reschedule-button activity-card__complete" type="button" data-complete-task="${index}">Marcar como concluída</button>`
+            }
           </div>
         </article>
       `;
     })
     .join("");
+
+  container.querySelectorAll("[data-complete-task]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const task = studentData.tasks[Number(button.dataset.completeTask)];
+
+      task.status = "Concluída";
+      task.due = task.due.startsWith("Concluída") ? task.due : `Concluída em ${task.due}`;
+      renderTasks();
+    });
+  });
 }
 
 function renderStars(score) {
@@ -233,7 +356,7 @@ function renderStars(score) {
 function renderFeedback() {
   const ratingsContainer = document.querySelector("[data-skill-ratings]");
   const feedbackContainer = document.querySelector("[data-feedback-list]");
-  const { ratings, ...notes } = studentData.feedback;
+  const { ratings, teacherComment } = studentData.feedback;
 
   ratingsContainer.innerHTML = `
     <span class="panel-label">Sistema de estrelas</span>
@@ -252,77 +375,199 @@ function renderFeedback() {
     </div>
   `;
 
-  const labels = {
-    comments: "Comentários da professora",
-    evolution: "Evolução",
-    difficulties: "Dificuldades",
-    positives: "Pontos positivos",
-    recommendations: "Recomendações",
-  };
-
-  feedbackContainer.innerHTML = Object.entries(notes)
-    .map(
-      ([key, value]) => `
-        <article class="feedback-card">
-          <span class="panel-label">${labels[key]}</span>
-          <h3>${labels[key]}</h3>
-          <p>${value}</p>
-        </article>
-      `
-    )
-    .join("");
+  feedbackContainer.innerHTML = `
+    <article class="feedback-card">
+      <span class="panel-label">Comentários da professora</span>
+      <h3>Comentários da professora</h3>
+      <p>${teacherComment}</p>
+    </article>
+  `;
 }
 
-function renderClassDetail(lesson) {
+function getDaySlots(day) {
+  return studentData.schedule.days[day] ?? [];
+}
+
+function getDayStatus(day) {
+  const slots = getDaySlots(day);
+
+  if (slots.some((slot) => slot.status === "Aula marcada")) {
+    return "class";
+  }
+
+  if (slots.some((slot) => slot.status === "Solicitação enviada")) {
+    return "requested";
+  }
+
+  if (slots.some((slot) => slot.status === "Disponível")) {
+    return "available";
+  }
+
+  return "empty";
+}
+
+function getDayStatusLabel(status) {
+  const labels = {
+    class: "Aula",
+    available: "Disponível",
+    requested: "Solicitado",
+  };
+
+  return labels[status] ?? "";
+}
+
+function renderCalendarDetail(slot, day) {
   const container = document.querySelector("[data-class-detail]");
 
-  if (lesson.status !== "Aula marcada") {
+  if (!slot) {
     container.innerHTML = `
-      <span class="panel-label">${lesson.status}</span>
-      <h3>${lesson.title}</h3>
-      <p>${lesson.date} às ${lesson.time}</p>
-      <p>Este horário está sinalizado apenas para consulta.</p>
+      <span class="panel-label">Dia ${day} de maio</span>
+      <h3>Horários do dia</h3>
+      <p>Selecione um horário para ver os detalhes ou solicitar uma troca.</p>
+    `;
+    return;
+  }
+
+  if (slot.status === "Aula marcada") {
+    container.innerHTML = `
+      <span class="panel-label">Aula marcada</span>
+      <h3>${slot.title}</h3>
+      <p><strong>Horário:</strong> ${day}/05/2026 às ${slot.time}</p>
+      <p><strong>Link Meet:</strong> <a href="${slot.meet}" target="_blank" rel="noreferrer">${slot.meet}</a></p>
+      <div>
+        <span class="panel-label">Materiais</span>
+        <ul>
+          ${slot.materials.map((material) => `<li>${material}</li>`).join("")}
+        </ul>
+      </div>
+    `;
+    return;
+  }
+
+  if (slot.status === "Solicitação enviada") {
+    container.innerHTML = `
+      <span class="panel-label">Solicitação enviada</span>
+      <h3>${slot.time}</h3>
+      <p>Aguardando confirmação da professora.</p>
     `;
     return;
   }
 
   container.innerHTML = `
-    <span class="panel-label">Aula marcada</span>
-    <h3>${lesson.title}</h3>
-    <p><strong>Horário:</strong> ${lesson.date} às ${lesson.time}</p>
-    <p><strong>Link Meet:</strong> <a href="${lesson.meet}" target="_blank" rel="noreferrer">${lesson.meet}</a></p>
-    <div>
-      <span class="panel-label">Materiais</span>
-      <ul>
-        ${lesson.materials.map((material) => `<li>${material}</li>`).join("")}
-      </ul>
-    </div>
+    <span class="panel-label">Horário disponível</span>
+    <h3>${slot.time}</h3>
+    <p>Deseja solicitar este horário?</p>
+    <button class="reschedule-button" type="button" data-request-slot>Solicitar troca</button>
   `;
+
+  container.querySelector("[data-request-slot]")?.addEventListener("click", () => {
+    slot.status = "Solicitação enviada";
+    slot.title = "Solicitação enviada";
+    renderSchedule();
+  });
+}
+
+function renderScheduleDayPanel() {
+  const container = document.querySelector("[data-schedule-list]");
+  const day = scheduleState.selectedDay;
+  const slots = getDaySlots(day);
+
+  const dayPanel = container.querySelector("[data-day-panel]");
+
+  dayPanel.innerHTML = `
+    <span class="panel-label">Dia ${day} de maio</span>
+    <h3>Horários do dia</h3>
+    ${
+      slots.length
+        ? `<div class="schedule-time-list">
+            ${slots
+              .map((slot, index) => {
+                const statusClass = getStatusClass(slot.status);
+                const isSelected = scheduleState.selectedSlotIndex === index;
+
+                return `
+                  <button
+                    class="schedule-time ${isSelected ? "active" : ""}"
+                    type="button"
+                    data-slot-index="${index}"
+                  >
+                    <strong>${slot.time}</strong>
+                    <span class="status status--${statusClass}">${slot.status}</span>
+                  </button>
+                `;
+              })
+              .join("")}
+          </div>`
+        : `<p>Nenhum horário disponível ou aula marcada neste dia.</p>`
+    }
+  `;
+
+  dayPanel.querySelectorAll("[data-slot-index]").forEach((slotButton) => {
+    slotButton.addEventListener("click", () => {
+      scheduleState.selectedSlotIndex = Number(slotButton.dataset.slotIndex);
+      renderScheduleDayPanel();
+      renderCalendarDetail(slots[scheduleState.selectedSlotIndex], day);
+    });
+  });
+
+  renderCalendarDetail(slots[scheduleState.selectedSlotIndex], day);
 }
 
 function renderSchedule() {
   const container = document.querySelector("[data-schedule-list]");
+  const { monthLabel, year, monthIndex } = studentData.schedule;
+  const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  const firstWeekday = new Date(year, monthIndex, 1).getDay();
+  const totalDays = new Date(year, monthIndex + 1, 0).getDate();
+  const cells = [
+    ...Array.from({ length: firstWeekday }, () => null),
+    ...Array.from({ length: totalDays }, (_, index) => index + 1),
+  ];
 
-  container.innerHTML = studentData.schedule
-    .map((lesson, index) => {
-      const statusClass = getStatusClass(lesson.status);
-      const isClass = lesson.status === "Aula marcada";
+  container.innerHTML = `
+    <section class="calendar-card">
+      <div class="calendar-header">
+        <span class="panel-label">Calendário mensal</span>
+        <h2>${monthLabel}</h2>
+      </div>
+      <div class="calendar-grid" aria-label="Calendário de ${monthLabel}">
+        ${weekDays.map((dayName) => `<span class="calendar-weekday">${dayName}</span>`).join("")}
+        ${cells
+          .map((day) => {
+            if (!day) {
+              return `<span class="calendar-day calendar-day--empty" aria-hidden="true"></span>`;
+            }
 
-      return `
-        <button class="schedule-slot ${isClass ? "schedule-slot--button" : ""}" type="button" data-lesson-index="${index}">
-          <span class="status status--${statusClass}">${lesson.status}</span>
-          <h3>${lesson.title}</h3>
-          <p>${lesson.date} às ${lesson.time}</p>
-        </button>
-      `;
-    })
-    .join("");
+            const status = getDayStatus(day);
+            const label = getDayStatusLabel(status);
+            const isSelected = day === scheduleState.selectedDay;
 
-  container.querySelectorAll("[data-lesson-index]").forEach((slot) => {
-    slot.addEventListener("click", () => {
-      renderClassDetail(studentData.schedule[Number(slot.dataset.lessonIndex)]);
+            return `
+              <button
+                class="calendar-day calendar-day--${status} ${isSelected ? "active" : ""}"
+                type="button"
+                data-calendar-day="${day}"
+              >
+                <span class="calendar-day__number">${day}</span>
+                ${label ? `<span class="calendar-day__label">${label}</span>` : ""}
+              </button>
+            `;
+          })
+          .join("")}
+      </div>
+    </section>
+    <section class="schedule-day-panel" data-day-panel></section>
+  `;
+
+  container.querySelectorAll("[data-calendar-day]").forEach((dayButton) => {
+    dayButton.addEventListener("click", () => {
+      scheduleState.selectedDay = Number(dayButton.dataset.calendarDay);
+      scheduleState.selectedSlotIndex = null;
+      renderSchedule();
     });
   });
+
+  renderScheduleDayPanel();
 }
 
 function renderProfile() {

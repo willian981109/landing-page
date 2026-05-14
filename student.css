@@ -354,6 +354,12 @@ h3 {
   border-color: rgba(31, 61, 43, 0.2);
 }
 
+.status--solicitacao-enviada {
+  background: rgba(194, 164, 111, 0.2);
+  border-color: rgba(194, 164, 111, 0.44);
+  color: var(--green-900);
+}
+
 .reschedule-button {
   background: transparent;
   border: 1px solid var(--gold);
@@ -386,15 +392,13 @@ h3 {
 
 .resource-card:hover,
 .material-card:hover,
-.activity-card:hover,
-.schedule-slot:hover {
+.activity-card:hover {
   box-shadow: var(--shadow);
   transform: translateY(-3px);
 }
 
 .resource-card a,
 .material-card a,
-.inline-links a,
 .class-detail a {
   color: var(--green-900);
   display: inline-flex;
@@ -404,8 +408,7 @@ h3 {
 }
 
 .material-card,
-.activity-card,
-.schedule-slot {
+.activity-card {
   transition: box-shadow 180ms ease, transform 180ms ease;
 }
 
@@ -440,15 +443,84 @@ h3 {
   padding-top: 1rem;
 }
 
-.inline-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
+.attachment-list {
+  display: grid;
+  gap: 0.7rem;
 }
 
-.inline-links a {
-  border-bottom: 1px solid rgba(194, 164, 111, 0.54);
-  margin-top: 0.35rem;
+.attachment-item {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: auto 1fr;
+  padding: 0.85rem;
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.attachment-item:hover {
+  background: var(--white);
+  border-color: rgba(194, 164, 111, 0.58);
+  box-shadow: 0 12px 32px rgba(20, 36, 27, 0.1);
+  transform: translateY(-1px);
+}
+
+.attachment-item--primary {
+  background: rgba(194, 164, 111, 0.13);
+  border-color: rgba(194, 164, 111, 0.5);
+}
+
+.attachment-item__icon {
+  align-items: center;
+  background: var(--green-900);
+  color: var(--white);
+  display: inline-flex;
+  font-size: 0.68rem;
+  font-weight: 800;
+  height: 2.55rem;
+  justify-content: center;
+  letter-spacing: 0.04em;
+  width: 2.55rem;
+}
+
+.attachment-item__icon--pdf {
+  background: #7a3e2f;
+}
+
+.attachment-item__icon--link,
+.attachment-item__icon--audio,
+.attachment-item__icon--video {
+  background: var(--olive);
+}
+
+.attachment-item__content {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.attachment-item__content strong {
+  color: var(--green-900);
+  line-height: 1.25;
+}
+
+.attachment-item__content span,
+.attachment-item__content small {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.attachment-item__content small {
+  margin-top: 0.2rem;
+}
+
+.activity-card__complete {
+  justify-self: start;
+}
+
+.activity-card__done {
+  color: var(--green-900) !important;
+  font-weight: 800;
 }
 
 .feedback-layout,
@@ -491,24 +563,181 @@ h3 {
   letter-spacing: 0.08em;
 }
 
-.schedule-slot {
+.calendar-card,
+.schedule-day-panel {
   background: rgba(255, 255, 255, 0.86);
   border: 1px solid var(--line);
   box-shadow: 0 16px 48px rgba(20, 36, 27, 0.08);
-  display: block;
   padding: clamp(1.2rem, 4vw, 1.8rem);
+}
+
+.calendar-header {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  justify-content: space-between;
+  margin-bottom: 1.2rem;
+}
+
+.calendar-header .panel-label {
+  margin-bottom: 0;
+}
+
+.calendar-header h2 {
+  font-size: clamp(1.55rem, 4vw, 2.2rem);
+  margin-bottom: 0;
+}
+
+.calendar-grid {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-weekday {
+  color: var(--olive);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding-bottom: 0.35rem;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.calendar-day {
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(31, 61, 43, 0.1);
+  color: var(--green-900);
+  display: grid;
+  gap: 0.35rem;
+  min-height: clamp(4.25rem, 8vw, 5.5rem);
+  padding: 0.55rem;
   text-align: left;
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.calendar-day:not(.calendar-day--empty):hover,
+.calendar-day.active {
+  border-color: rgba(194, 164, 111, 0.7);
+  box-shadow: 0 14px 36px rgba(20, 36, 27, 0.12);
+  transform: translateY(-2px);
+}
+
+.calendar-day--empty {
+  background: transparent;
+  border-color: transparent;
+}
+
+.calendar-day--class {
+  background: var(--green-900);
+  border-color: var(--green-900);
+  color: var(--white);
+}
+
+.calendar-day--available {
+  background: rgba(194, 164, 111, 0.12);
+  border-color: rgba(194, 164, 111, 0.45);
+}
+
+.calendar-day--requested {
+  background: rgba(194, 164, 111, 0.22);
+  border-color: rgba(194, 164, 111, 0.72);
+}
+
+.calendar-day__number {
+  font-weight: 800;
+  line-height: 1;
+}
+
+.calendar-day__label {
+  align-self: end;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.05;
+  text-transform: uppercase;
+  word-break: break-word;
+}
+
+.calendar-day--class .calendar-day__label {
+  color: var(--gold);
+}
+
+.schedule-day-panel {
+  animation: fadeUp 260ms ease both;
+}
+
+.schedule-day-panel h3 {
+  margin-bottom: 1rem;
+}
+
+.schedule-day-panel p {
+  color: var(--muted);
+  margin-bottom: 0;
+}
+
+.schedule-time-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.schedule-time {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding: 0.85rem;
+  text-align: left;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
   width: 100%;
 }
 
-.schedule-slot h3 {
-  margin-top: 1rem;
+.schedule-time:hover,
+.schedule-time.active {
+  background: var(--white);
+  border-color: rgba(194, 164, 111, 0.62);
+  transform: translateY(-1px);
+}
+
+.schedule-time strong {
+  color: var(--green-900);
+}
+
+@media (max-width: 540px) {
+  .calendar-card,
+  .schedule-day-panel {
+    padding: 1rem;
+  }
+
+  .calendar-grid {
+    gap: 0.25rem;
+  }
+
+  .calendar-weekday {
+    font-size: 0.62rem;
+  }
+
+  .calendar-day {
+    min-height: 3.85rem;
+    padding: 0.35rem;
+  }
+
+  .calendar-day__label {
+    font-size: 0.52rem;
+    letter-spacing: 0;
+  }
+
+  .schedule-time {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 .class-detail {
   align-self: start;
-  position: sticky;
-  top: 6rem;
 }
 
 .class-detail strong {
@@ -623,6 +852,11 @@ h3 {
   .agenda-layout {
     align-items: start;
     grid-template-columns: minmax(0, 1fr) minmax(280px, 0.42fr);
+  }
+
+  .class-detail {
+    position: sticky;
+    top: 6rem;
   }
 }
 
