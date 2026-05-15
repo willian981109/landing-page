@@ -26,8 +26,33 @@ CREATE TABLE IF NOT EXISTS activity_students (
   status VARCHAR(30) NOT NULL DEFAULT 'pending',
   assigned_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   completed_at TIMESTAMP WITH TIME ZONE,
+  teacher_feedback TEXT,
+  teacher_summary TEXT,
+  teacher_grade INTEGER,
+  teacher_observations TEXT,
+  reviewed_at TIMESTAMP WITH TIME ZONE,
   UNIQUE (activity_id, student_id)
 );
+
+ALTER TABLE activity_students
+  ADD COLUMN IF NOT EXISTS teacher_feedback TEXT,
+  ADD COLUMN IF NOT EXISTS teacher_summary TEXT,
+  ADD COLUMN IF NOT EXISTS teacher_grade INTEGER,
+  ADD COLUMN IF NOT EXISTS teacher_observations TEXT,
+  ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP WITH TIME ZONE;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'activity_students_status_check'
+  ) THEN
+    ALTER TABLE activity_students
+      ADD CONSTRAINT activity_students_status_check
+      CHECK (status IN ('pending', 'in_progress', 'completed', 'reviewed'));
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS activity_materials (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

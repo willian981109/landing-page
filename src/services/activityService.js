@@ -2,6 +2,7 @@ const activityModel = require("../models/activityModel");
 const studentModel = require("../models/studentModel");
 
 const VALID_MATERIAL_TYPES = ["link", "pdf", "audio", "docs", "video"];
+const VALID_ACTIVITY_STATUSES = ["pending", "in_progress", "completed", "reviewed"];
 
 function createActivityError(message, statusCode = 400) {
   const error = new Error(message);
@@ -125,7 +126,7 @@ async function markStudentActivityInProgress(activityId, studentId) {
     throw createActivityError("Activity not found", 404);
   }
 
-  if (currentActivity.status === "completed") {
+  if (currentActivity.status !== "pending") {
     return currentActivity;
   }
 
@@ -137,13 +138,78 @@ async function completeStudentActivity(activityId, studentId) {
     throw createActivityError("activity_id and student_id must be valid ids");
   }
 
-  const activity = await activityModel.updateStudentActivityStatus(activityId, studentId, "completed");
+  const currentActivity = await activityModel.findActivityByStudent(activityId, studentId);
 
-  if (!activity) {
+  if (!currentActivity) {
     throw createActivityError("Activity not found", 404);
   }
 
-  return activity;
+  if (currentActivity.status === "completed" || currentActivity.status === "reviewed") {
+    return currentActivity;
+  }
+
+  return activityModel.updateStudentActivityStatus(activityId, studentId, "completed");
+}
+
+async function listTeacherActivityAssignments(teacherId) {
+  if (!isUuid(teacherId)) {
+    throw createActivityError("teacher_id must be a valid user id");
+  }
+
+  return activityModel.findTeacherActivityAssignments(teacherId);
+}
+
+async function getTeacherActivityAssignment(assignmentId, teacherId) {
+  if (!isUuid(assignmentId) || !isUuid(teacherId)) {
+    throw createActivityError("assignment_id and teacher_id must be valid ids");
+  }
+
+  const assignment = await activityModel.findTeacherActivityAssignmentById(assignmentId, teacherId);
+
+  if (!assignment) {
+    throw createActivityError("Activity assignment not found", 404);
+  }
+
+  return assignment;
+}
+
+function normalizeReviewPayload(payload) {
+  const grade = payload.teacher_grade ?? payload.teacherGrade ?? payload.grade;
+  const normalizedGrade = grade === "" || grade === null || grade === undefined ? null : Number(grade);
+
+  if (normalizedGrade !== null && (!Number.isInteger(normalizedGrade) || normalizedGrade < 0)) {
+    throw createActivityError("Grade must be a non-negative integer");
+  }
+
+  return {
+    teacher_feedback: String(payload.teacher_feedback ?? payload.teacherFeedback ?? "").trim() || null,
+    teacher_summary: String(payload.teacher_summary ?? payload.teacherSummary ?? "").trim() || null,
+    teacher_grade: normalizedGrade,
+    teacher_observations:
+      String(payload.teacher_observations ?? payload.teacherObservations ?? payload.observations ?? "").trim() ||
+      null,
+  };
+}
+
+async function reviewTeacherActivityAssignment(assignmentId, teacherId, payload) {
+  if (!isUuid(assignmentId) || !isUuid(teacherId)) {
+    throw createActivityError("assignment_id and teacher_id must be valid ids");
+  }
+
+  const currentAssignment = await activityModel.findTeacherActivityAssignmentById(assignmentId, teacherId);
+
+  if (!currentAssignment) {
+    throw createActivityError("Activity assignment not found", 404);
+  }
+
+  const review = normalizeReviewPayload(payload);
+  const assignment = await activityModel.reviewTeacherActivityAssignment(assignmentId, teacherId, review);
+
+  if (!assignment || !VALID_ACTIVITY_STATUSES.includes(assignment.status)) {
+    throw createActivityError("Activity assignment not found", 404);
+  }
+
+  return assignment;
 }
 
 async function updateActivity(id, payload) {
@@ -183,6 +249,9 @@ module.exports = {
   getStudentActivity,
   markStudentActivityInProgress,
   completeStudentActivity,
+  listTeacherActivityAssignments,
+  getTeacherActivityAssignment,
+  reviewTeacherActivityAssignment,
   updateActivity,
   deleteActivity,
 };

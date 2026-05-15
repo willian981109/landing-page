@@ -305,7 +305,7 @@ h3 {
 .activity-dashboard {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: 1rem;
 }
 
@@ -375,6 +375,7 @@ h3 {
 }
 
 .status--concluida,
+.status--corrigida,
 .status--disponivel {
   background: rgba(31, 61, 43, 0.08);
   border-color: rgba(31, 61, 43, 0.2);
@@ -473,6 +474,10 @@ h3 {
   background: rgba(255, 255, 255, 0.68);
 }
 
+.activity-card--corrigida {
+  border-color: rgba(31, 61, 43, 0.22);
+}
+
 .activity-card .status {
   margin-bottom: 1rem;
 }
@@ -516,6 +521,34 @@ h3 {
   font-weight: 800;
   margin: 0;
   padding: 0.9rem 1rem;
+}
+
+.teacher-review {
+  background: rgba(31, 61, 43, 0.05);
+  border: 1px solid rgba(31, 61, 43, 0.14);
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+}
+
+.teacher-review article {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.teacher-review strong {
+  color: var(--green-900);
+}
+
+.teacher-review p {
+  color: var(--muted);
+  margin-bottom: 0;
+}
+
+.teacher-review__grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .attachment-list {
@@ -791,6 +824,12 @@ h3 {
 
 .schedule-time strong {
   color: var(--green-900);
+}
+
+@media (max-width: 760px) {
+  .activity-dashboard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 540px) {

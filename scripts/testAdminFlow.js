@@ -154,7 +154,50 @@ async function testAdminFlow() {
 
   console.log("Student activity flow validated");
 
-  console.log("7. Patch activity");
+  console.log("7. Validate teacher review flow");
+  const { data: teacherAssignments } = await request("/teacher/activities", {
+    headers: authHeaders,
+  });
+  const teacherAssignment = teacherAssignments.find(
+    (assignment) => assignment.activity_id === createdActivity.id
+  );
+
+  if (!teacherAssignment || teacherAssignment.material_count !== 2) {
+    throw new Error("GET /teacher/activities did not return the created assignment");
+  }
+
+  const { data: reviewedAssignment } = await request(
+    `/teacher/activities/${teacherAssignment.assignment_id}/review`,
+    {
+      method: "PATCH",
+      headers: authHeaders,
+      body: JSON.stringify({
+        teacher_summary: "Good completion and clear answers",
+        teacher_feedback: "Review pronunciation in the second answer",
+        teacher_grade: 9,
+        teacher_observations: "Next class: revisit listening speed",
+      }),
+    }
+  );
+
+  if (reviewedAssignment.status !== "reviewed" || reviewedAssignment.teacher_grade !== 9) {
+    throw new Error("PATCH /teacher/activities/:assignmentId/review did not review assignment");
+  }
+
+  const { data: reviewedStudentActivity } = await request(`/my-activities/${createdActivity.id}`, {
+    headers: studentAuthHeaders,
+  });
+
+  if (
+    reviewedStudentActivity.status !== "reviewed" ||
+    reviewedStudentActivity.teacher_feedback !== "Review pronunciation in the second answer"
+  ) {
+    throw new Error("Reviewed feedback was not visible to the student");
+  }
+
+  console.log("Teacher review flow validated");
+
+  console.log("8. Patch activity");
   const { data: updatedActivity } = await request(`/activities/${createdActivity.id}`, {
     method: "PATCH",
     headers: authHeaders,
@@ -172,7 +215,7 @@ async function testAdminFlow() {
 
   console.log("Activity updated");
 
-  console.log("8. Delete activity");
+  console.log("9. Delete activity");
   await request(`/activities/${createdActivity.id}`, {
     method: "DELETE",
     headers: authHeaders,

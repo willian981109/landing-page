@@ -222,6 +222,7 @@ function getActivityStatusLabel(status) {
     pending: "Pendente",
     in_progress: "Em andamento",
     completed: "Concluída",
+    reviewed: "Corrigida",
   };
 
   return labels[status] || "Pendente";
@@ -356,7 +357,7 @@ function renderActivityDashboard() {
       accumulator[activity.status] = (accumulator[activity.status] || 0) + 1;
       return accumulator;
     },
-    { total: 0, pending: 0, in_progress: 0, completed: 0 }
+    { total: 0, pending: 0, in_progress: 0, completed: 0, reviewed: 0 }
   );
 
   container.innerHTML = `
@@ -371,6 +372,10 @@ function renderActivityDashboard() {
     <article class="activity-metric">
       <span class="panel-label">Concluídas</span>
       <strong>${totals.completed}</strong>
+    </article>
+    <article class="activity-metric">
+      <span class="panel-label">Corrigidas</span>
+      <strong>${totals.reviewed}</strong>
     </article>
   `;
 }
@@ -404,7 +409,50 @@ function renderActivityMaterials(materials = []) {
   `;
 }
 
+function renderTeacherReview(activity) {
+  if (activity.status !== "reviewed") {
+    return "";
+  }
+
+  return `
+    <div class="teacher-review">
+      <span class="panel-label">Correção da professora</span>
+      <div class="teacher-review__grid">
+        <article>
+          <strong>Nota</strong>
+          <p>${
+            activity.teacher_grade === null || activity.teacher_grade === undefined
+              ? "Sem nota"
+              : `${activity.teacher_grade} pontos`
+          }</p>
+        </article>
+        <article>
+          <strong>Status</strong>
+          <p>Atividade corrigida</p>
+        </article>
+      </div>
+      ${
+        activity.teacher_summary
+          ? `<article><strong>Resumo</strong><p>${escapeHtml(activity.teacher_summary)}</p></article>`
+          : ""
+      }
+      ${
+        activity.teacher_feedback
+          ? `<article><strong>Feedback / correção</strong><p>${escapeHtml(activity.teacher_feedback)}</p></article>`
+          : ""
+      }
+      ${
+        activity.teacher_observations
+          ? `<article><strong>Observações</strong><p>${escapeHtml(activity.teacher_observations)}</p></article>`
+          : ""
+      }
+    </div>
+  `;
+}
+
 function renderActivityDetails(activity) {
+  const isFinalized = activity.status === "completed" || activity.status === "reviewed";
+
   return `
     <div class="activity-details">
       <div>
@@ -420,11 +468,18 @@ function renderActivityDetails(activity) {
           class="reschedule-button"
           type="button"
           data-complete-activity="${activity.id}"
-          ${activity.status === "completed" ? "disabled" : ""}
+          ${isFinalized ? "disabled" : ""}
         >
-          ${activity.status === "completed" ? "Atividade concluída" : "Marcar como concluída"}
+          ${
+            activity.status === "reviewed"
+              ? "Atividade corrigida"
+              : activity.status === "completed"
+                ? "Atividade concluída"
+                : "Marcar como concluída"
+          }
         </button>
       </div>
+      ${renderTeacherReview(activity)}
     </div>
   `;
 }
@@ -512,6 +567,7 @@ async function loadActivities() {
   try {
     activityState.items = await fetchStudentApi("/my-activities");
     renderTasks();
+    renderFeedback();
   } catch (error) {
     console.error("Erro ao carregar atividades do aluno:", error);
     container.innerHTML = `
@@ -586,6 +642,7 @@ function renderFeedback() {
   const ratingsContainer = document.querySelector("[data-skill-ratings]");
   const feedbackContainer = document.querySelector("[data-feedback-list]");
   const { ratings, teacherComment } = studentData.feedback;
+  const reviewedActivities = activityState.items.filter((activity) => activity.status === "reviewed");
 
   ratingsContainer.innerHTML = `
     <span class="panel-label">Sistema de estrelas</span>
@@ -604,13 +661,44 @@ function renderFeedback() {
     </div>
   `;
 
-  feedbackContainer.innerHTML = `
-    <article class="feedback-card">
-      <span class="panel-label">Comentários da professora</span>
-      <h3>Comentários da professora</h3>
-      <p>${teacherComment}</p>
-    </article>
-  `;
+  if (!reviewedActivities.length) {
+    feedbackContainer.innerHTML = `
+      <article class="feedback-card">
+        <span class="panel-label">Comentários da professora</span>
+        <h3>Comentários da professora</h3>
+        <p>${teacherComment}</p>
+      </article>
+    `;
+    return;
+  }
+
+  feedbackContainer.innerHTML = reviewedActivities
+    .map(
+      (activity) => `
+        <article class="feedback-card feedback-card--reviewed">
+          <span class="panel-label">Atividade corrigida</span>
+          <h3>${escapeHtml(activity.title)}</h3>
+          <p><strong>Nota:</strong> ${
+            activity.teacher_grade === null || activity.teacher_grade === undefined
+              ? "Sem nota"
+              : `${activity.teacher_grade} pontos`
+          }</p>
+          ${activity.teacher_summary ? `<p><strong>Resumo:</strong> ${escapeHtml(activity.teacher_summary)}</p>` : ""}
+          ${
+            activity.teacher_feedback
+              ? `<p><strong>Feedback:</strong> ${escapeHtml(activity.teacher_feedback)}</p>`
+              : ""
+          }
+          ${
+            activity.teacher_observations
+              ? `<p><strong>Observações:</strong> ${escapeHtml(activity.teacher_observations)}</p>`
+              : ""
+          }
+          <time>${activity.reviewed_at ? `Corrigida em ${formatActivityDate(activity.reviewed_at)}` : "Corrigida"}</time>
+        </article>
+      `
+    )
+    .join("");
 }
 
 function getDaySlots(day) {

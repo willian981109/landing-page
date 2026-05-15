@@ -58,7 +58,7 @@ function hasTeacherSession() {
 }
 
 if (hasTeacherSession()) {
-  window.location.href = "teacher-create-activity.html";
+  window.location.href = "admin-activities.html";
 } else {
   clearAdminSession();
 }
@@ -94,7 +94,7 @@ loginForm.addEventListener("submit", async (event) => {
 
     saveAdminSession(data);
     setAuthMessage("Login realizado com sucesso.", "success");
-    window.location.href = "teacher-create-activity.html";
+    window.location.href = "admin-activities.html";
   } catch (error) {
     clearAdminSession();
     setAuthMessage(error.message, "error");

@@ -63,6 +63,40 @@ async function completeMine(req, res, next) {
   }
 }
 
+async function listTeacherAssignments(req, res, next) {
+  try {
+    const activities = await activityService.listTeacherActivityAssignments(req.user.id);
+
+    return res.json(activities);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function getTeacherAssignment(req, res, next) {
+  try {
+    const activity = await activityService.getTeacherActivityAssignment(req.params.assignmentId, req.user.id);
+
+    return res.json(activity);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function reviewTeacherAssignment(req, res, next) {
+  try {
+    const activity = await activityService.reviewTeacherActivityAssignment(
+      req.params.assignmentId,
+      req.user.id,
+      req.body
+    );
+
+    return res.json(activity);
+  } catch (error) {
+    return next(error);
+  }
+}
+
 async function update(req, res, next) {
   try {
     const activity = await activityService.updateActivity(req.params.id, {
@@ -93,6 +127,9 @@ module.exports = {
   getMine,
   markMineInProgress,
   completeMine,
+  listTeacherAssignments,
+  getTeacherAssignment,
+  reviewTeacherAssignment,
   update,
   remove,
 };
