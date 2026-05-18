@@ -89,8 +89,12 @@ async function createActivity(payload) {
   });
 }
 
-async function listActivities() {
-  return activityModel.findAllActivities();
+async function listActivities(teacherId) {
+  if (!isUuid(teacherId)) {
+    throw createActivityError("teacher_id must be a valid user id");
+  }
+
+  return activityModel.findAllActivities(teacherId);
 }
 
 async function listStudentActivities(studentId) {
@@ -151,12 +155,16 @@ async function completeStudentActivity(activityId, studentId) {
   return activityModel.updateStudentActivityStatus(activityId, studentId, "completed");
 }
 
-async function listTeacherActivityAssignments(teacherId) {
+async function listTeacherActivityAssignments(teacherId, studentId = null) {
   if (!isUuid(teacherId)) {
     throw createActivityError("teacher_id must be a valid user id");
   }
 
-  return activityModel.findTeacherActivityAssignments(teacherId);
+  if (studentId !== null && !isUuid(studentId)) {
+    throw createActivityError("student_id must be a valid user id");
+  }
+
+  return activityModel.findTeacherActivityAssignments(teacherId, studentId);
 }
 
 async function getTeacherActivityAssignment(assignmentId, teacherId) {
@@ -212,13 +220,17 @@ async function reviewTeacherActivityAssignment(assignmentId, teacherId, payload)
   return assignment;
 }
 
-async function updateActivity(id, payload) {
+async function updateActivity(id, teacherId, payload) {
+  if (!isUuid(id) || !isUuid(teacherId)) {
+    throw createActivityError("activity_id and teacher_id must be valid ids");
+  }
+
   validateActivityInput({
     ...payload,
-    teacher_id: payload.teacher_id,
+    teacher_id: teacherId,
   });
 
-  const activity = await activityModel.updateActivity(id, {
+  const activity = await activityModel.updateActivity(id, teacherId, {
     title: payload.title,
     description: payload.description,
     deadline: payload.deadline,
@@ -232,8 +244,12 @@ async function updateActivity(id, payload) {
   return activity;
 }
 
-async function deleteActivity(id) {
-  const activity = await activityModel.deleteActivity(id);
+async function deleteActivity(id, teacherId) {
+  if (!isUuid(id) || !isUuid(teacherId)) {
+    throw createActivityError("activity_id and teacher_id must be valid ids");
+  }
+
+  const activity = await activityModel.deleteActivity(id, teacherId);
 
   if (!activity) {
     throw createActivityError("Activity not found", 404);

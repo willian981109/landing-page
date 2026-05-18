@@ -46,16 +46,6 @@ const studentData = {
       url: "https://dictionary.cambridge.org/",
     },
   ],
-  feedback: {
-    teacherComment:
-      "Você tem evoluído bem na organização das frases e já demonstra mais confiança ao responder sem traduzir. Ainda há dificuldades com verbos irregulares e compreensão em falas mais rápidas, mas seu comprometimento, pronúncia e naturalidade nas perguntas estão cada vez melhores. Continue praticando com foco em listening, revisão do passado e construção de frases completas para ganhar mais segurança nas próximas conversas.",
-    ratings: {
-      Speaking: 4,
-      Listening: 3,
-      Writing: 4,
-      Reading: 5,
-    },
-  },
   schedule: {
     monthLabel: "Maio 2026",
     year: 2026,
@@ -116,23 +106,41 @@ const STUDENT_USER_KEY = "englishStudioStudentUser";
 const studentName = document.querySelector("[data-student-name]");
 const homeTitle = document.querySelector("[data-home-title]");
 const logoutButton = document.querySelector("[data-student-logout]");
+const today = new Date();
 const scheduleState = {
-  selectedDay: studentData.schedule.selectedDay,
+  year: today.getFullYear(),
+  monthIndex: today.getMonth(),
+  selectedDay: today.getDate(),
   selectedSlotIndex: null,
+  schedules: [],
+  changeRequests: [],
+  availability: [],
+  message: "",
+  isLoading: false,
 };
 const activityState = {
   items: [],
   expandedId: null,
   feedback: "",
 };
+const feedbackProfileState = {
+  profile: null,
+  isLoading: false,
+  message: "",
+};
+const skillRatings = [
+  { key: "speaking_rating", label: "Speaking" },
+  { key: "listening_rating", label: "Listening" },
+  { key: "writing_rating", label: "Writing" },
+  { key: "reading_rating", label: "Reading" },
+];
 
 function getStudentToken() {
   return localStorage.getItem(STUDENT_TOKEN_KEY);
 }
 
 function clearStudentSession() {
-  localStorage.removeItem(STUDENT_TOKEN_KEY);
-  localStorage.removeItem(STUDENT_USER_KEY);
+  window.EnglishStudioAuth?.clearSession();
 }
 
 function getStoredStudent() {
@@ -168,14 +176,12 @@ function requireStudentSession() {
     return true;
   }
 
-  clearStudentSession();
-  window.location.href = "login.html";
+  window.EnglishStudioAuth?.logout();
   return false;
 }
 
 function redirectToLogin() {
-  clearStudentSession();
-  window.location.href = "login.html";
+  window.EnglishStudioAuth?.logout();
 }
 
 function escapeHtml(value) {
@@ -567,7 +573,6 @@ async function loadActivities() {
   try {
     activityState.items = await fetchStudentApi("/my-activities");
     renderTasks();
-    renderFeedback();
   } catch (error) {
     console.error("Erro ao carregar atividades do aluno:", error);
     container.innerHTML = `
@@ -635,25 +640,59 @@ async function completeActivity(activityId) {
 }
 
 function renderStars(score) {
-  return Array.from({ length: 5 }, (_, index) => (index < score ? "★" : "☆")).join("");
+  return Array.from({ length: 5 }, (_, index) => (index < Number(score || 0) ? "★" : "☆")).join("");
+}
+
+function getEmptyFeedbackProfile() {
+  return {
+    speaking_rating: 0,
+    listening_rating: 0,
+    writing_rating: 0,
+    reading_rating: 0,
+    teacher_comment: "",
+    updated_at: null,
+  };
+}
+
+function normalizeFeedbackProfile(profile) {
+  return {
+    ...getEmptyFeedbackProfile(),
+    ...(profile || {}),
+  };
 }
 
 function renderFeedback() {
   const ratingsContainer = document.querySelector("[data-skill-ratings]");
   const feedbackContainer = document.querySelector("[data-feedback-list]");
-  const { ratings, teacherComment } = studentData.feedback;
-  const reviewedActivities = activityState.items.filter((activity) => activity.status === "reviewed");
+
+  if (feedbackProfileState.isLoading) {
+    ratingsContainer.innerHTML = `
+      <span class="panel-label">Sistema de estrelas</span>
+      <h3>Carregando habilidades</h3>
+      <p>Buscando seu feedback geral.</p>
+    `;
+    feedbackContainer.innerHTML = `
+      <article class="feedback-card">
+        <span class="panel-label">Comentário da professora</span>
+        <h3>Carregando acompanhamento</h3>
+        <p>Aguarde um instante.</p>
+      </article>
+    `;
+    return;
+  }
+
+  const profile = normalizeFeedbackProfile(feedbackProfileState.profile);
 
   ratingsContainer.innerHTML = `
     <span class="panel-label">Sistema de estrelas</span>
     <h3>Habilidades</h3>
     <div class="skill-list">
-      ${Object.entries(ratings)
+      ${skillRatings
         .map(
-          ([skill, score]) => `
+          (skill) => `
             <div class="skill-row">
-              <span>${skill}</span>
-              <strong aria-label="${score} de 5 estrelas">${renderStars(score)}</strong>
+              <span>${skill.label}</span>
+              <strong aria-label="${profile[skill.key]} de 5 estrelas">${renderStars(profile[skill.key])}</strong>
             </div>
           `
         )
@@ -661,62 +700,192 @@ function renderFeedback() {
     </div>
   `;
 
-  if (!reviewedActivities.length) {
-    feedbackContainer.innerHTML = `
-      <article class="feedback-card">
-        <span class="panel-label">Comentários da professora</span>
-        <h3>Comentários da professora</h3>
-        <p>${teacherComment}</p>
-      </article>
-    `;
-    return;
+  feedbackContainer.innerHTML = `
+    <article class="feedback-card feedback-card--general">
+      <span class="panel-label">Comentário da professora</span>
+      <h3>Feedback geral</h3>
+      <p>${
+        profile.teacher_comment
+          ? escapeHtml(profile.teacher_comment)
+          : "A professora ainda não registrou um comentário geral para este acompanhamento."
+      }</p>
+      ${profile.updated_at ? `<time>Atualizado em ${formatActivityDate(profile.updated_at)}</time>` : ""}
+      ${feedbackProfileState.message ? `<p class="feedback-message">${escapeHtml(feedbackProfileState.message)}</p>` : ""}
+    </article>
+  `;
+}
+
+async function loadFeedbackProfile() {
+  feedbackProfileState.isLoading = true;
+  feedbackProfileState.message = "";
+  renderFeedback();
+
+  try {
+    feedbackProfileState.profile = await fetchStudentApi("/my-feedback-profile");
+  } catch (error) {
+    console.error("Erro ao carregar feedback geral:", error);
+    feedbackProfileState.message = error.message;
+    feedbackProfileState.profile = getEmptyFeedbackProfile();
+  } finally {
+    feedbackProfileState.isLoading = false;
+    renderFeedback();
+  }
+}
+
+function getScheduleDateKey(value) {
+  if (!value) {
+    return "";
   }
 
-  feedbackContainer.innerHTML = reviewedActivities
-    .map(
-      (activity) => `
-        <article class="feedback-card feedback-card--reviewed">
-          <span class="panel-label">Atividade corrigida</span>
-          <h3>${escapeHtml(activity.title)}</h3>
-          <p><strong>Nota:</strong> ${
-            activity.teacher_grade === null || activity.teacher_grade === undefined
-              ? "Sem nota"
-              : `${activity.teacher_grade} pontos`
-          }</p>
-          ${activity.teacher_summary ? `<p><strong>Resumo:</strong> ${escapeHtml(activity.teacher_summary)}</p>` : ""}
-          ${
-            activity.teacher_feedback
-              ? `<p><strong>Feedback:</strong> ${escapeHtml(activity.teacher_feedback)}</p>`
-              : ""
-          }
-          ${
-            activity.teacher_observations
-              ? `<p><strong>Observações:</strong> ${escapeHtml(activity.teacher_observations)}</p>`
-              : ""
-          }
-          <time>${activity.reviewed_at ? `Corrigida em ${formatActivityDate(activity.reviewed_at)}` : "Corrigida"}</time>
-        </article>
-      `
-    )
-    .join("");
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  return String(value).slice(0, 10);
+}
+
+function getSelectedDateKey(day = scheduleState.selectedDay) {
+  const month = String(scheduleState.monthIndex + 1).padStart(2, "0");
+  const selectedDay = String(day).padStart(2, "0");
+
+  return `${scheduleState.year}-${month}-${selectedDay}`;
+}
+
+function formatScheduleTime(value) {
+  return String(value || "").slice(0, 5);
+}
+
+function formatScheduleDate(value) {
+  const dateKey = getScheduleDateKey(value);
+
+  if (!dateKey) {
+    return "Sem data";
+  }
+
+  const [year, month, day] = dateKey.split("-");
+  return `${day}/${month}/${year}`;
+}
+
+function getScheduleStatusLabel(status) {
+  const labels = {
+    scheduled: "Aula marcada",
+    pending_change: "Solicitação enviada",
+    confirmed: "Aprovada",
+    canceled: "Cancelada",
+    completed: "Concluída",
+  };
+
+  return labels[status] || "Aula marcada";
+}
+
+function getRequestStatusLabel(status) {
+  const labels = {
+    pending: "Solicitação enviada",
+    approved: "Aprovada",
+    rejected: "Rejeitada",
+    canceled: "Cancelada",
+  };
+
+  return labels[status] || "Solicitação enviada";
+}
+
+function getMonthLabel() {
+  const date = new Date(scheduleState.year, scheduleState.monthIndex, 1);
+
+  return date.toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function getChangeSourceSchedule() {
+  return scheduleState.schedules.find((schedule) => schedule.status !== "canceled");
+}
+
+function getPendingRequestForSchedule(scheduleId) {
+  return scheduleState.changeRequests.find(
+    (request) => request.schedule_id === scheduleId && request.status === "pending"
+  );
+}
+
+function getRequestsForDate(dateKey) {
+  return scheduleState.changeRequests.filter(
+    (request) => getScheduleDateKey(request.requested_date) === dateKey
+  );
 }
 
 function getDaySlots(day) {
-  return studentData.schedule.days[day] ?? [];
+  const dateKey = getSelectedDateKey(day);
+  const schedules = scheduleState.schedules
+    .filter((schedule) => getScheduleDateKey(schedule.class_date) === dateKey)
+    .map((schedule) => ({
+      kind: "class",
+      id: schedule.id,
+      time: formatScheduleTime(schedule.class_time),
+      status: getScheduleStatusLabel(schedule.status),
+      statusKey: schedule.status === "confirmed" ? "approved" : schedule.status,
+      schedule,
+    }));
+  const requests = getRequestsForDate(dateKey).map((request) => ({
+    kind: "request",
+    id: request.id,
+    time: formatScheduleTime(request.requested_time),
+    status: getRequestStatusLabel(request.status),
+    statusKey: request.status === "pending" ? "requested" : request.status,
+    request,
+  }));
+  const occupiedTimes = new Set([
+    ...schedules.map((slot) => slot.time),
+    ...requests.filter((slot) => slot.request.status === "pending").map((slot) => slot.time),
+  ]);
+  const hasScheduleToChange = Boolean(getChangeSourceSchedule());
+  const availableSlots = scheduleState.availability
+    .filter((slot) => getScheduleDateKey(slot.available_date) === dateKey)
+    .filter((slot) => !occupiedTimes.has(formatScheduleTime(slot.available_time)))
+    .map((slot) => ({
+          kind: "available",
+          id: slot.id,
+          time: formatScheduleTime(slot.available_time),
+          status: "Disponível",
+          statusKey: "available",
+          requestedDate: dateKey,
+          availability: slot,
+          canRequest: hasScheduleToChange,
+        }));
+
+  return [...schedules, ...requests, ...availableSlots].sort((first, second) =>
+    first.time.localeCompare(second.time)
+  );
 }
 
 function getDayStatus(day) {
   const slots = getDaySlots(day);
 
-  if (slots.some((slot) => slot.status === "Aula marcada")) {
-    return "class";
-  }
-
-  if (slots.some((slot) => slot.status === "Solicitação enviada")) {
+  if (slots.some((slot) => slot.statusKey === "requested" || slot.statusKey === "pending_change")) {
     return "requested";
   }
 
-  if (slots.some((slot) => slot.status === "Disponível")) {
+  if (slots.some((slot) => slot.statusKey === "rejected")) {
+    return "rejected";
+  }
+
+  if (slots.some((slot) => slot.statusKey === "canceled")) {
+    return "canceled";
+  }
+
+  if (slots.some((slot) => slot.statusKey === "approved")) {
+    return "approved";
+  }
+
+  if (slots.some((slot) => slot.statusKey === "completed")) {
+    return "completed";
+  }
+
+  if (slots.some((slot) => slot.kind === "class")) {
+    return "class";
+  }
+
+  if (slots.some((slot) => slot.statusKey === "available")) {
     return "available";
   }
 
@@ -728,59 +897,237 @@ function getDayStatusLabel(status) {
     class: "Aula",
     available: "Disponível",
     requested: "Solicitado",
+    approved: "Aprovado",
+    rejected: "Rejeitado",
+    canceled: "Cancelada",
+    completed: "Concluída",
   };
 
   return labels[status] ?? "";
 }
 
+function renderScheduleMessage() {
+  if (!scheduleState.message) {
+    return "";
+  }
+
+  return `<p class="schedule-feedback">${escapeHtml(scheduleState.message)}</p>`;
+}
+
 function renderCalendarDetail(slot, day) {
   const container = document.querySelector("[data-class-detail]");
+  const dateKey = getSelectedDateKey(day);
+  const formattedDate = formatScheduleDate(dateKey);
 
   if (!slot) {
     container.innerHTML = `
-      <span class="panel-label">Dia ${day} de maio</span>
+      <span class="panel-label">Dia ${formattedDate}</span>
       <h3>Horários do dia</h3>
       <p>Selecione um horário para ver os detalhes ou solicitar uma troca.</p>
     `;
     return;
   }
 
-  if (slot.status === "Aula marcada") {
+  if (slot.kind === "class") {
+    const schedule = slot.schedule;
+    const meetLink = schedule.meet_link
+      ? `<p><strong>Link da aula:</strong> <a href="${escapeHtml(schedule.meet_link)}" target="_blank" rel="noreferrer">Entrar na aula</a></p>`
+      : `<p><strong>Link da aula:</strong> A professora ainda não adicionou o link.</p>`;
+
     container.innerHTML = `
-      <span class="panel-label">Aula marcada</span>
-      <h3>${slot.title}</h3>
-      <p><strong>Horário:</strong> ${day}/05/2026 às ${slot.time}</p>
-      <p><strong>Link Meet:</strong> <a href="${slot.meet}" target="_blank" rel="noreferrer">${slot.meet}</a></p>
-      <div>
-        <span class="panel-label">Materiais</span>
-        <ul>
-          ${slot.materials.map((material) => `<li>${material}</li>`).join("")}
-        </ul>
-      </div>
+      <span class="panel-label">${escapeHtml(slot.status)}</span>
+      <h3>Aula com ${escapeHtml(schedule.teacher_name || "a professora")}</h3>
+      <p><strong>Horário:</strong> ${formattedDate} às ${escapeHtml(slot.time)}</p>
+      <p><strong>Status:</strong> ${escapeHtml(slot.status)}</p>
+      ${meetLink}
+      ${schedule.notes ? `<p><strong>Observações:</strong> ${escapeHtml(schedule.notes)}</p>` : ""}
     `;
     return;
   }
 
-  if (slot.status === "Solicitação enviada") {
+  if (slot.kind === "request") {
+    const request = slot.request;
+    const canCancel = request.status === "pending";
+
     container.innerHTML = `
-      <span class="panel-label">Solicitação enviada</span>
-      <h3>${slot.time}</h3>
-      <p>Aguardando confirmação da professora.</p>
+      <span class="panel-label">${escapeHtml(slot.status)}</span>
+      <h3>${escapeHtml(slot.time)}</h3>
+      <p><strong>Data solicitada:</strong> ${formatScheduleDate(request.requested_date)} às ${escapeHtml(slot.time)}</p>
+      <p><strong>Status:</strong> ${escapeHtml(slot.status)}</p>
+      ${request.reason ? `<p><strong>Motivo:</strong> ${escapeHtml(request.reason)}</p>` : ""}
+      ${
+        canCancel
+          ? `<button class="reschedule-button" type="button" data-cancel-request="${request.id}">Cancelar solicitação</button>`
+          : ""
+      }
     `;
+
+    container.querySelector("[data-cancel-request]")?.addEventListener("click", () => {
+      cancelScheduleChangeRequest(request.id);
+    });
     return;
   }
+
+  const sourceSchedule = getChangeSourceSchedule();
 
   container.innerHTML = `
     <span class="panel-label">Horário disponível</span>
-    <h3>${slot.time}</h3>
-    <p>Deseja solicitar este horário?</p>
-    <button class="reschedule-button" type="button" data-request-slot>Solicitar troca</button>
+    <h3>${escapeHtml(slot.time)}</h3>
+    ${
+      sourceSchedule
+        ? `<p>Solicitar troca da sua aula atual para ${formattedDate} às ${escapeHtml(slot.time)}.</p>
+           <button class="reschedule-button" type="button" data-request-slot>Solicitar troca</button>`
+        : `<p>Horário disponível na agenda da professora.</p>`
+    }
   `;
 
   container.querySelector("[data-request-slot]")?.addEventListener("click", () => {
-    slot.status = "Solicitação enviada";
-    slot.title = "Solicitação enviada";
-    renderSchedule();
+    createScheduleChangeRequest(sourceSchedule.id, slot.requestedDate, slot.time);
+  });
+}
+
+function renderCalendarDetailV2(slot, day) {
+  const container = document.querySelector("[data-class-detail]");
+  const dateKey = getSelectedDateKey(day);
+  const formattedDate = formatScheduleDate(dateKey);
+
+  if (!slot) {
+    container.innerHTML = `
+      <span class="panel-label">Dia ${formattedDate}</span>
+      <h3>Horarios do dia</h3>
+      <p>Selecione um horario para ver os detalhes ou solicitar uma troca.</p>
+    `;
+    return;
+  }
+
+  if (slot.kind === "class") {
+    const schedule = slot.schedule;
+    const meetLink = String(schedule.meet_link || "").trim();
+    const pendingRequest = schedule.pending_request || getPendingRequestForSchedule(schedule.id);
+    const canRequestChange = !pendingRequest && !["canceled", "completed"].includes(schedule.status);
+
+    container.innerHTML = `
+      <span class="panel-label">${escapeHtml(slot.status)}</span>
+      <h3>Aula com ${escapeHtml(schedule.teacher_name || "a professora")}</h3>
+      <p><strong>Horario:</strong> ${formattedDate} as ${escapeHtml(slot.time)}</p>
+      <p><strong>Status:</strong> ${escapeHtml(slot.status)}</p>
+      ${
+        meetLink
+          ? `<a class="class-link-button" href="${escapeHtml(meetLink)}" target="_blank" rel="noreferrer">Entrar na aula</a>`
+          : ""
+      }
+      ${schedule.notes ? `<p><strong>Observacoes:</strong> ${escapeHtml(schedule.notes)}</p>` : ""}
+      ${
+        pendingRequest
+          ? `
+            <div class="change-request-card change-request-card--pending">
+              <span class="panel-label">Troca pendente</span>
+              <p>${formatScheduleDate(pendingRequest.requested_date)} as ${formatScheduleTime(
+                pendingRequest.requested_time
+              )}</p>
+              ${pendingRequest.reason ? `<p>${escapeHtml(pendingRequest.reason)}</p>` : ""}
+              <button class="reschedule-button" type="button" data-cancel-request="${pendingRequest.id}">
+                Cancelar solicitacao
+              </button>
+            </div>
+          `
+          : ""
+      }
+      ${
+        canRequestChange
+          ? `
+            <button class="reschedule-button" type="button" data-open-change-request>
+              Solicitar troca
+            </button>
+            <form class="change-request-card" data-change-request-form hidden>
+              <span class="panel-label">Solicitar troca</span>
+              <label class="schedule-field">
+                <span>Nova data</span>
+                <input type="date" name="requested_date" value="${escapeHtml(dateKey)}" required />
+              </label>
+              <label class="schedule-field">
+                <span>Novo horario</span>
+                <input type="time" name="requested_time" value="${escapeHtml(slot.time)}" required />
+              </label>
+              <label class="schedule-field">
+                <span>Observacao opcional</span>
+                <textarea name="reason" rows="3" placeholder="Explique brevemente o motivo"></textarea>
+              </label>
+              <div class="schedule-form-actions">
+                <button class="reschedule-button" type="submit">Enviar solicitacao</button>
+                <button class="reschedule-button reschedule-button--ghost" type="button" data-close-change-request>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          `
+          : ""
+      }
+    `;
+
+    container.querySelector("[data-open-change-request]")?.addEventListener("click", () => {
+      container.querySelector("[data-change-request-form]").hidden = false;
+    });
+
+    container.querySelector("[data-close-change-request]")?.addEventListener("click", () => {
+      container.querySelector("[data-change-request-form]").hidden = true;
+    });
+
+    container.querySelector("[data-change-request-form]")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      createScheduleChangeRequest(
+        schedule.id,
+        formData.get("requested_date"),
+        formData.get("requested_time"),
+        formData.get("reason")
+      );
+    });
+
+    container.querySelector("[data-cancel-request]")?.addEventListener("click", () => {
+      cancelScheduleChangeRequest(pendingRequest.id);
+    });
+    return;
+  }
+
+  if (slot.kind === "request") {
+    const request = slot.request;
+    const canCancel = request.status === "pending";
+
+    container.innerHTML = `
+      <span class="panel-label">${escapeHtml(slot.status)}</span>
+      <h3>${escapeHtml(slot.time)}</h3>
+      <p><strong>Data solicitada:</strong> ${formatScheduleDate(request.requested_date)} as ${escapeHtml(slot.time)}</p>
+      <p><strong>Status:</strong> ${escapeHtml(slot.status)}</p>
+      ${request.reason ? `<p><strong>Motivo:</strong> ${escapeHtml(request.reason)}</p>` : ""}
+      ${
+        canCancel
+          ? `<button class="reschedule-button" type="button" data-cancel-request="${request.id}">Cancelar solicitacao</button>`
+          : ""
+      }
+    `;
+
+    container.querySelector("[data-cancel-request]")?.addEventListener("click", () => {
+      cancelScheduleChangeRequest(request.id);
+    });
+    return;
+  }
+
+  const sourceSchedule = getChangeSourceSchedule();
+
+  container.innerHTML = `
+    <span class="panel-label">Horario disponivel</span>
+    <h3>${escapeHtml(slot.time)}</h3>
+    ${
+      sourceSchedule
+        ? `<p>Solicitar troca da sua aula atual para ${formattedDate} as ${escapeHtml(slot.time)}.</p>
+           <button class="reschedule-button" type="button" data-request-slot>Solicitar troca</button>`
+        : `<p>Horario disponivel na agenda da professora.</p>`
+    }
+  `;
+
+  container.querySelector("[data-request-slot]")?.addEventListener("click", () => {
+    createScheduleChangeRequest(sourceSchedule.id, slot.requestedDate, slot.time);
   });
 }
 
@@ -788,12 +1135,12 @@ function renderScheduleDayPanel() {
   const container = document.querySelector("[data-schedule-list]");
   const day = scheduleState.selectedDay;
   const slots = getDaySlots(day);
-
   const dayPanel = container.querySelector("[data-day-panel]");
 
   dayPanel.innerHTML = `
-    <span class="panel-label">Dia ${day} de maio</span>
+    <span class="panel-label">Dia ${formatScheduleDate(getSelectedDateKey(day))}</span>
     <h3>Horários do dia</h3>
+    ${renderScheduleMessage()}
     ${
       slots.length
         ? `<div class="schedule-time-list">
@@ -808,8 +1155,8 @@ function renderScheduleDayPanel() {
                     type="button"
                     data-slot-index="${index}"
                   >
-                    <strong>${slot.time}</strong>
-                    <span class="status status--${statusClass}">${slot.status}</span>
+                    <strong>${escapeHtml(slot.time)}</strong>
+                    <span class="status status--${statusClass}">${escapeHtml(slot.status)}</span>
                   </button>
                 `;
               })
@@ -823,23 +1170,34 @@ function renderScheduleDayPanel() {
     slotButton.addEventListener("click", () => {
       scheduleState.selectedSlotIndex = Number(slotButton.dataset.slotIndex);
       renderScheduleDayPanel();
-      renderCalendarDetail(slots[scheduleState.selectedSlotIndex], day);
+      renderCalendarDetailV2(slots[scheduleState.selectedSlotIndex], day);
     });
   });
 
-  renderCalendarDetail(slots[scheduleState.selectedSlotIndex], day);
+  renderCalendarDetailV2(slots[scheduleState.selectedSlotIndex], day);
 }
 
 function renderSchedule() {
   const container = document.querySelector("[data-schedule-list]");
-  const { monthLabel, year, monthIndex } = studentData.schedule;
+  const monthLabel = getMonthLabel();
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-  const firstWeekday = new Date(year, monthIndex, 1).getDay();
-  const totalDays = new Date(year, monthIndex + 1, 0).getDate();
+  const firstWeekday = new Date(scheduleState.year, scheduleState.monthIndex, 1).getDay();
+  const totalDays = new Date(scheduleState.year, scheduleState.monthIndex + 1, 0).getDate();
   const cells = [
     ...Array.from({ length: firstWeekday }, () => null),
     ...Array.from({ length: totalDays }, (_, index) => index + 1),
   ];
+
+  if (scheduleState.isLoading) {
+    container.innerHTML = `
+      <section class="calendar-card">
+        <span class="panel-label">Carregando</span>
+        <h2>Buscando agenda</h2>
+        <p>Aguarde enquanto carregamos suas aulas e solicitações.</p>
+      </section>
+    `;
+    return;
+  }
 
   container.innerHTML = `
     <section class="calendar-card">
@@ -887,6 +1245,63 @@ function renderSchedule() {
   renderScheduleDayPanel();
 }
 
+async function loadSchedule() {
+  scheduleState.isLoading = true;
+  renderSchedule();
+
+  try {
+    const schedule = await fetchStudentApi("/schedule/my");
+    scheduleState.schedules = schedule.schedules || [];
+    scheduleState.changeRequests = schedule.change_requests || [];
+    scheduleState.availability = schedule.availability || [];
+    scheduleState.message = "";
+  } catch (error) {
+    console.error("Erro ao carregar agenda:", error);
+    scheduleState.message = error.message;
+  } finally {
+    scheduleState.isLoading = false;
+    renderSchedule();
+  }
+}
+
+async function createScheduleChangeRequest(scheduleId, requestedDate, requestedTime, reason = "") {
+  try {
+    await fetchStudentApi("/schedule/change-request", {
+      method: "POST",
+      body: JSON.stringify({
+        class_schedule_id: scheduleId,
+        requested_date: requestedDate,
+        requested_time: requestedTime,
+        reason: reason || "Solicitacao enviada pelo painel do aluno.",
+      }),
+    });
+    scheduleState.message = "Solicitação enviada para a professora.";
+    await loadSchedule();
+    scheduleState.message = "Solicitacao enviada para a professora.";
+    renderSchedule();
+  } catch (error) {
+    console.error("Erro ao solicitar troca:", error);
+    scheduleState.message = error.message;
+    renderSchedule();
+  }
+}
+
+async function cancelScheduleChangeRequest(requestId) {
+  try {
+    await fetchStudentApi(`/schedule/change-request/${requestId}/cancel`, {
+      method: "PATCH",
+    });
+    scheduleState.message = "Solicitação cancelada.";
+    await loadSchedule();
+    scheduleState.message = "Solicitacao cancelada.";
+    renderSchedule();
+  } catch (error) {
+    console.error("Erro ao cancelar solicitação:", error);
+    scheduleState.message = error.message;
+    renderSchedule();
+  }
+}
+
 function renderProfile() {
   const container = document.querySelector("[data-profile-info]");
   const user = getStoredStudent();
@@ -923,8 +1338,7 @@ function setupNavigation() {
 }
 
 logoutButton.addEventListener("click", () => {
-  clearStudentSession();
-  window.location.href = "login.html";
+  window.EnglishStudioAuth?.logout();
 });
 
 if (requireStudentSession()) {
@@ -932,8 +1346,8 @@ if (requireStudentSession()) {
   renderHome();
   renderMaterials();
   loadActivities();
-  renderFeedback();
-  renderSchedule();
+  loadFeedbackProfile();
+  loadSchedule();
   renderProfile();
   setupNavigation();
 }

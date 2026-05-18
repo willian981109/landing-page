@@ -43,18 +43,16 @@ function readStoredUser(key) {
 }
 
 function saveSession({ token, user }) {
+  window.EnglishStudioAuth?.clearSession();
+
   if (user.role === "teacher") {
     localStorage.setItem(ADMIN_TOKEN_KEY, token);
     localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user));
-    localStorage.removeItem(STUDENT_TOKEN_KEY);
-    localStorage.removeItem(STUDENT_USER_KEY);
     return;
   }
 
   localStorage.setItem(STUDENT_TOKEN_KEY, token);
   localStorage.setItem(STUDENT_USER_KEY, JSON.stringify(user));
-  localStorage.removeItem(ADMIN_TOKEN_KEY);
-  localStorage.removeItem(ADMIN_USER_KEY);
 }
 
 function redirectByRole(user) {
@@ -83,8 +81,7 @@ function redirectExistingSession() {
     return true;
   }
 
-  localStorage.removeItem(STUDENT_TOKEN_KEY);
-  localStorage.removeItem(STUDENT_USER_KEY);
+  window.EnglishStudioAuth?.clearSession();
   return false;
 }
 

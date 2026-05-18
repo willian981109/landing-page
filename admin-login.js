@@ -16,13 +16,13 @@ function setAuthMessage(message, type = "") {
 }
 
 function saveAdminSession({ token, user }) {
+  window.EnglishStudioAuth?.clearSession();
   localStorage.setItem(ADMIN_TOKEN_KEY, token);
   localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user));
 }
 
 function clearAdminSession() {
-  localStorage.removeItem(ADMIN_TOKEN_KEY);
-  localStorage.removeItem(ADMIN_USER_KEY);
+  window.EnglishStudioAuth?.clearSession();
 }
 
 function getTokenPayload(token) {
@@ -58,7 +58,7 @@ function hasTeacherSession() {
 }
 
 if (hasTeacherSession()) {
-  window.location.href = "admin-activities.html";
+  window.location.href = "admin-schedule.html";
 } else {
   clearAdminSession();
 }
@@ -94,7 +94,7 @@ loginForm.addEventListener("submit", async (event) => {
 
     saveAdminSession(data);
     setAuthMessage("Login realizado com sucesso.", "success");
-    window.location.href = "admin-activities.html";
+    window.location.href = "admin-schedule.html";
   } catch (error) {
     clearAdminSession();
     setAuthMessage(error.message, "error");

@@ -15,7 +15,10 @@ async function create(req, res, next) {
 
 async function list(req, res, next) {
   try {
-    const activities = await activityService.listActivities();
+    const hasStudentFilter = Object.prototype.hasOwnProperty.call(req.query, "studentId");
+    const activities = hasStudentFilter
+      ? await activityService.listTeacherActivityAssignments(req.user.id, req.query.studentId)
+      : await activityService.listActivities(req.user.id);
 
     return res.json(activities);
   } catch (error) {
@@ -65,7 +68,11 @@ async function completeMine(req, res, next) {
 
 async function listTeacherAssignments(req, res, next) {
   try {
-    const activities = await activityService.listTeacherActivityAssignments(req.user.id);
+    const hasStudentFilter = Object.prototype.hasOwnProperty.call(req.query, "studentId");
+    const activities = await activityService.listTeacherActivityAssignments(
+      req.user.id,
+      hasStudentFilter ? req.query.studentId : null
+    );
 
     return res.json(activities);
   } catch (error) {
@@ -99,10 +106,7 @@ async function reviewTeacherAssignment(req, res, next) {
 
 async function update(req, res, next) {
   try {
-    const activity = await activityService.updateActivity(req.params.id, {
-      ...req.body,
-      teacher_id: req.user.id,
-    });
+    const activity = await activityService.updateActivity(req.params.id, req.user.id, req.body);
 
     return res.json(activity);
   } catch (error) {
@@ -112,7 +116,7 @@ async function update(req, res, next) {
 
 async function remove(req, res, next) {
   try {
-    await activityService.deleteActivity(req.params.id);
+    await activityService.deleteActivity(req.params.id, req.user.id);
 
     return res.status(204).send();
   } catch (error) {

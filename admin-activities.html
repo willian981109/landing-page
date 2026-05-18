@@ -24,8 +24,8 @@
       </a>
 
       <div class="teacher-header__actions">
+        <a class="header-link" href="admin-schedule.html">Agenda</a>
         <a class="header-link" href="teacher-create-activity.html">Criar atividade</a>
-        <a class="header-link" href="login.html">Área do aluno</a>
         <button class="logout-link" type="button" data-admin-logout>Sair</button>
       </div>
     </header>
@@ -40,6 +40,27 @@
       </section>
 
       <section class="metric-grid" data-metrics aria-label="Resumo das atividades"></section>
+
+      <section class="student-selector-panel" aria-label="Selecionar aluno para acompanhamento">
+        <div>
+          <span class="panel-label">Aluno em acompanhamento</span>
+          <h2>Selecionar aluno</h2>
+          <p data-student-filter-status>Carregando alunos cadastrados...</p>
+        </div>
+
+        <label class="filter-field student-filter-field">
+          <span>Aluno</span>
+          <select data-student-filter disabled>
+            <option value="">Carregando alunos...</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="pedagogical-profile-panel" data-pedagogical-profile aria-label="Perfil pedagÃ³gico do aluno">
+        <span class="panel-label">Perfil pedagÃ³gico do aluno</span>
+        <h2>Feedback geral</h2>
+        <p>Selecione um aluno para editar estrelas, evoluÃ§Ã£o semanal e observaÃ§Ãµes gerais.</p>
+      </section>
 
       <section class="dashboard-layout">
         <section class="activity-panel">
@@ -72,6 +93,7 @@
       </section>
     </main>
 
+    <script src="auth-session.js" defer></script>
     <script src="admin-activities.js" defer></script>
   </body>
 </html>

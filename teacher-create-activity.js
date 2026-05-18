@@ -66,8 +66,7 @@ function getAuthHeaders() {
 }
 
 function clearAdminSession() {
-  localStorage.removeItem(ADMIN_TOKEN_KEY);
-  localStorage.removeItem(ADMIN_USER_KEY);
+  window.EnglishStudioAuth?.clearSession();
 }
 
 function getAdminUser() {
@@ -128,19 +127,16 @@ function requireTeacherSession() {
     return true;
   }
 
-  clearAdminSession();
-  window.location.href = "admin-login.html";
+  window.EnglishStudioAuth?.logout();
   return false;
 }
 
 function redirectToLogin(message) {
-  clearAdminSession();
-
   if (message) {
     alert(message);
   }
 
-  window.location.href = "admin-login.html";
+  window.EnglishStudioAuth?.logout();
 }
 
 function escapeHtml(value) {
@@ -183,7 +179,7 @@ async function loadStudents() {
   if (!token) {
     studentSelect.innerHTML = '<option value="">Faça login novamente</option>';
     setStudentStatus("Sessão inválida. Redirecionando para login...", "error");
-    window.location.href = "admin-login.html";
+    window.EnglishStudioAuth?.logout();
     return;
   }
 
@@ -198,10 +194,9 @@ async function loadStudents() {
     });
 
     if (response.status === 401 || response.status === 403) {
-      clearAdminSession();
       studentSelect.innerHTML = '<option value="">Faça login novamente</option>';
       setStudentStatus("Sessão expirada. Redirecionando para login...", "error");
-      window.location.href = "admin-login.html";
+      window.EnglishStudioAuth?.logout();
       return;
     }
 
@@ -338,8 +333,7 @@ addMaterialButton.addEventListener("click", addMaterial);
 cancelMaterialButton.addEventListener("click", closeMaterialDraft);
 
 adminLogoutButton.addEventListener("click", () => {
-  clearAdminSession();
-  window.location.href = "admin-login.html";
+  window.EnglishStudioAuth?.logout();
 });
 
 document.addEventListener("click", (event) => {

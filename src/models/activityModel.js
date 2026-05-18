@@ -76,7 +76,7 @@ async function createActivity({
   }
 }
 
-async function findAllActivities() {
+async function findAllActivities(teacherId) {
   const result = await pool.query(
     `
       SELECT
@@ -129,8 +129,10 @@ async function findAllActivities() {
           '[]'
         ) AS materials
       FROM activities a
+      WHERE a.teacher_id = $1
       ORDER BY a.created_at DESC
-    `
+    `,
+    [teacherId]
   );
 
   return result.rows;
@@ -253,7 +255,10 @@ async function updateStudentActivityStatus(activityId, studentId, status) {
   return findActivityByStudent(activityId, studentId);
 }
 
-async function findTeacherActivityAssignments(teacherId) {
+async function findTeacherActivityAssignments(teacherId, studentId = null) {
+  const values = [teacherId];
+  const studentFilter = studentId ? `AND ast.student_id = $${values.push(studentId)}` : "";
+
   const result = await pool.query(
     `
       SELECT
@@ -305,9 +310,10 @@ async function findTeacherActivityAssignments(teacherId) {
       INNER JOIN activities a ON a.id = ast.activity_id
       INNER JOIN users u ON u.id = ast.student_id
       WHERE a.teacher_id = $1
+        ${studentFilter}
       ORDER BY ast.assigned_at DESC
     `,
-    [teacherId]
+    values
   );
 
   return result.rows;
@@ -411,7 +417,7 @@ async function reviewTeacherActivityAssignment(
   return findTeacherActivityAssignmentById(assignmentId, teacherId);
 }
 
-async function updateActivity(id, { title, description, deadline, points }) {
+async function updateActivity(id, teacherId, { title, description, deadline, points }) {
   const result = await pool.query(
     `
       UPDATE activities
@@ -421,22 +427,24 @@ async function updateActivity(id, { title, description, deadline, points }) {
         deadline = $3,
         points = $4
       WHERE id = $5
+        AND teacher_id = $6
       RETURNING id, title, description, deadline, points, teacher_id, created_at
     `,
-    [title, description, deadline, points, id]
+    [title, description, deadline, points, id, teacherId]
   );
 
   return result.rows[0];
 }
 
-async function deleteActivity(id) {
+async function deleteActivity(id, teacherId) {
   const result = await pool.query(
     `
       DELETE FROM activities
       WHERE id = $1
+        AND teacher_id = $2
       RETURNING id
     `,
-    [id]
+    [id, teacherId]
   );
 
   return result.rows[0];

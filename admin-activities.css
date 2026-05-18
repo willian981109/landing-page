@@ -181,6 +181,8 @@ h3 {
 }
 
 .metric-card,
+.student-selector-panel,
+.pedagogical-profile-panel,
 .activity-panel,
 .detail-panel,
 .empty-state {
@@ -207,6 +209,101 @@ h3 {
 
 .metric-card--reviewed {
   border-color: rgba(194, 164, 111, 0.48);
+}
+
+.student-selector-panel {
+  align-items: end;
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: clamp(1rem, 3vw, 1.35rem);
+}
+
+.student-selector-panel h2 {
+  margin-bottom: 0.35rem;
+}
+
+.student-selector-panel p {
+  color: var(--muted);
+  margin: 0;
+}
+
+.student-filter-field select:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.pedagogical-profile-panel {
+  margin-bottom: 1rem;
+  padding: clamp(1rem, 3vw, 1.45rem);
+}
+
+.pedagogical-profile-form,
+.pedagogical-profile-heading {
+  display: grid;
+  gap: 1rem;
+}
+
+.pedagogical-profile-heading {
+  align-items: start;
+}
+
+.pedagogical-profile-panel p,
+.pedagogical-profile-heading p,
+.pedagogical-profile-heading small {
+  color: var(--muted);
+  margin: 0;
+}
+
+.profile-rating-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.profile-rating-row {
+  align-items: center;
+  background: rgba(245, 245, 240, 0.72);
+  border: 1px solid rgba(31, 61, 43, 0.12);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding: 0.85rem;
+}
+
+.profile-rating-row > span {
+  color: var(--green-900);
+  font-weight: 800;
+}
+
+.profile-stars {
+  display: inline-flex;
+  gap: 0.15rem;
+}
+
+.profile-star {
+  background: transparent;
+  border: 0;
+  color: rgba(194, 164, 111, 0.48);
+  font-size: 1.25rem;
+  line-height: 1;
+  min-height: 2rem;
+  min-width: 2rem;
+  padding: 0.2rem;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.profile-star:hover,
+.profile-star.is-active {
+  color: var(--gold);
+}
+
+.profile-star:hover {
+  transform: translateY(-1px);
+}
+
+.profile-comment-field {
+  margin-top: 0.1rem;
 }
 
 .dashboard-layout {
@@ -514,8 +611,20 @@ h3 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  .student-selector-panel {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 0.36fr);
+  }
+
   .panel-toolbar {
     grid-template-columns: 1fr minmax(180px, 0.32fr);
+  }
+
+  .pedagogical-profile-heading {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .profile-rating-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .assignment-row {

@@ -387,6 +387,24 @@ h3 {
   color: var(--green-900);
 }
 
+.status--aprovada {
+  background: rgba(31, 61, 43, 0.08);
+  border-color: rgba(31, 61, 43, 0.2);
+  color: var(--green-900);
+}
+
+.status--concluida {
+  background: rgba(31, 61, 43, 0.08);
+  border-color: rgba(31, 61, 43, 0.2);
+}
+
+.status--rejeitada,
+.status--cancelada {
+  background: rgba(122, 62, 47, 0.1);
+  border-color: rgba(122, 62, 47, 0.24);
+  color: #7a3e2f;
+}
+
 .reschedule-button {
   background: transparent;
   border: 1px solid var(--gold);
@@ -409,6 +427,88 @@ h3 {
   cursor: not-allowed;
   opacity: 0.62;
   transform: none;
+}
+
+.reschedule-button--ghost {
+  background: transparent;
+  border-color: rgba(31, 61, 43, 0.18);
+}
+
+.class-link-button {
+  align-items: center;
+  background: var(--green-900);
+  border: 1px solid var(--green-900);
+  color: var(--white) !important;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 800;
+  justify-content: center;
+  margin-top: 0.9rem !important;
+  min-height: 2.8rem;
+  padding: 0.72rem 1rem;
+  text-transform: uppercase;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.class-link-button:hover {
+  background: var(--green-800);
+  transform: translateY(-1px);
+}
+
+.change-request-card {
+  background: rgba(194, 164, 111, 0.1);
+  border: 1px solid rgba(194, 164, 111, 0.34);
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  padding: 1rem;
+}
+
+.change-request-card[hidden] {
+  display: none;
+}
+
+.change-request-card--pending {
+  background: rgba(31, 61, 43, 0.05);
+  border-color: rgba(31, 61, 43, 0.14);
+}
+
+.schedule-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.schedule-field span {
+  color: rgba(31, 61, 43, 0.78);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.schedule-field input,
+.schedule-field textarea {
+  background: rgba(245, 245, 240, 0.72);
+  border: 1px solid rgba(31, 61, 43, 0.16);
+  color: var(--ink);
+  min-height: 2.9rem;
+  outline: 0;
+  padding: 0.75rem 0.85rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.schedule-field input:focus,
+.schedule-field textarea:focus {
+  background: var(--white);
+  border-color: rgba(194, 164, 111, 0.8);
+  box-shadow: 0 0 0 3px rgba(194, 164, 111, 0.16);
+}
+
+.schedule-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
 }
 
 .feedback-card time {
@@ -683,6 +783,19 @@ h3 {
   letter-spacing: 0.08em;
 }
 
+.feedback-card--general {
+  min-height: 100%;
+}
+
+.feedback-message {
+  background: rgba(31, 61, 43, 0.08);
+  border: 1px solid rgba(31, 61, 43, 0.18);
+  color: var(--green-900) !important;
+  font-weight: 800;
+  margin-top: 1rem;
+  padding: 0.8rem;
+}
+
 .calendar-card,
 .schedule-day-panel {
   background: rgba(255, 255, 255, 0.86);
@@ -765,6 +878,26 @@ h3 {
   border-color: rgba(194, 164, 111, 0.72);
 }
 
+.calendar-day--approved {
+  background: rgba(31, 61, 43, 0.08);
+  border-color: rgba(31, 61, 43, 0.28);
+}
+
+.calendar-day--completed {
+  background: rgba(31, 61, 43, 0.08);
+  border-color: rgba(31, 61, 43, 0.28);
+}
+
+.calendar-day--rejected {
+  background: rgba(122, 62, 47, 0.1);
+  border-color: rgba(122, 62, 47, 0.26);
+}
+
+.calendar-day--canceled {
+  background: rgba(122, 62, 47, 0.1);
+  border-color: rgba(122, 62, 47, 0.26);
+}
+
 .calendar-day__number {
   font-weight: 800;
   line-height: 1;
@@ -824,6 +957,15 @@ h3 {
 
 .schedule-time strong {
   color: var(--green-900);
+}
+
+.schedule-feedback {
+  background: rgba(31, 61, 43, 0.08);
+  border: 1px solid rgba(31, 61, 43, 0.18);
+  color: var(--green-900) !important;
+  font-weight: 800;
+  margin-bottom: 0.85rem !important;
+  padding: 0.85rem;
 }
 
 @media (max-width: 760px) {

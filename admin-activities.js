@@ -1,6 +1,7 @@
 const API_BASE_URL = "http://localhost:3000";
 const ADMIN_TOKEN_KEY = "englishStudioAdminToken";
 const ADMIN_USER_KEY = "englishStudioAdminUser";
+const SELECTED_STUDENT_KEY = "englishStudioSelectedStudentId";
 
 const adminGreeting = document.querySelector("[data-admin-greeting]");
 const adminLogoutButton = document.querySelector("[data-admin-logout]");
@@ -8,6 +9,9 @@ const metricsContainer = document.querySelector("[data-metrics]");
 const assignmentList = document.querySelector("[data-assignment-list]");
 const detailPanel = document.querySelector("[data-detail-panel]");
 const statusFilter = document.querySelector("[data-status-filter]");
+const studentFilter = document.querySelector("[data-student-filter]");
+const studentFilterStatus = document.querySelector("[data-student-filter-status]");
+const pedagogicalProfilePanel = document.querySelector("[data-pedagogical-profile]");
 
 const materialTypes = {
   link: { label: "Link externo", icon: "URL" },
@@ -19,17 +23,38 @@ const materialTypes = {
 
 const activityState = {
   items: [],
+  students: [],
   selectedId: null,
+  selectedStudentId: localStorage.getItem(SELECTED_STUDENT_KEY) || "",
+  message: "",
+  loadVersion: 0,
+  detailVersion: 0,
+  profileVersion: 0,
+};
+
+const skillRatings = [
+  { key: "speaking_rating", label: "Speaking" },
+  { key: "listening_rating", label: "Listening" },
+  { key: "writing_rating", label: "Writing" },
+  { key: "reading_rating", label: "Reading" },
+];
+
+const feedbackProfileState = {
+  profile: null,
+  isLoading: false,
   message: "",
 };
+
+function isUuid(value) {
+  return typeof value === "string" && /^[0-9a-f-]{36}$/i.test(value);
+}
 
 function getAdminToken() {
   return localStorage.getItem(ADMIN_TOKEN_KEY);
 }
 
 function clearAdminSession() {
-  localStorage.removeItem(ADMIN_TOKEN_KEY);
-  localStorage.removeItem(ADMIN_USER_KEY);
+  window.EnglishStudioAuth?.clearSession();
 }
 
 function getAdminUser() {
@@ -64,14 +89,12 @@ function requireTeacherSession() {
     return true;
   }
 
-  clearAdminSession();
-  window.location.href = "admin-login.html";
+  window.EnglishStudioAuth?.logout();
   return false;
 }
 
 function redirectToLogin() {
-  clearAdminSession();
-  window.location.href = "admin-login.html";
+  window.EnglishStudioAuth?.logout();
 }
 
 function escapeHtml(value) {
@@ -91,6 +114,7 @@ async function fetchAdminApi(path, options = {}) {
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    cache: "no-store",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -154,6 +178,71 @@ function summarizeText(text, maxLength = 118) {
   return `${text.slice(0, maxLength).trim()}...`;
 }
 
+function getSelectedStudent() {
+  return activityState.students.find((student) => student.id === activityState.selectedStudentId);
+}
+
+function getEmptyFeedbackProfile() {
+  return {
+    student_id: activityState.selectedStudentId,
+    speaking_rating: 0,
+    listening_rating: 0,
+    writing_rating: 0,
+    reading_rating: 0,
+    teacher_comment: "",
+    updated_at: null,
+  };
+}
+
+function normalizeFeedbackProfile(profile) {
+  return {
+    ...getEmptyFeedbackProfile(),
+    ...(profile || {}),
+  };
+}
+
+function normalizeAssignments(assignments) {
+  if (!Array.isArray(assignments)) {
+    return [];
+  }
+
+  return assignments.filter((assignment) => {
+    if (!assignment || !isUuid(assignment.assignment_id) || !isUuid(assignment.student_id)) {
+      return false;
+    }
+
+    return assignment.student_id === activityState.selectedStudentId;
+  });
+}
+
+function setDetailPlaceholder(title = "Selecione uma atividade", text = "Ao abrir uma atividade, os materiais, status do aluno e campos de correção aparecem aqui.") {
+  detailPanel.innerHTML = `
+    <span class="panel-label">Detalhes</span>
+    <h2>${escapeHtml(title)}</h2>
+    <p>${escapeHtml(text)}</p>
+  `;
+}
+
+function renderStudentFilter() {
+  if (!activityState.students.length) {
+    studentFilter.disabled = true;
+    studentFilter.innerHTML = '<option value="">Nenhum aluno cadastrado</option>';
+    studentFilterStatus.textContent = "Cadastre um aluno para iniciar o acompanhamento pedagógico.";
+    return;
+  }
+
+  studentFilter.disabled = false;
+  studentFilter.innerHTML = activityState.students
+    .map((student) => `<option value="${student.id}">${escapeHtml(student.name)}</option>`)
+    .join("");
+  studentFilter.value = activityState.selectedStudentId;
+
+  const selectedStudent = getSelectedStudent();
+  studentFilterStatus.textContent = selectedStudent
+    ? `Mostrando atividades de ${selectedStudent.name}.`
+    : "Selecione um aluno para visualizar as atividades.";
+}
+
 function getFilteredAssignments() {
   const status = statusFilter.value;
 
@@ -165,6 +254,10 @@ function getFilteredAssignments() {
 }
 
 function replaceAssignment(updatedAssignment) {
+  if (!updatedAssignment || !isUuid(updatedAssignment.assignment_id)) {
+    return;
+  }
+
   activityState.items = activityState.items.map((assignment) =>
     assignment.assignment_id === updatedAssignment.assignment_id ? updatedAssignment : assignment
   );
@@ -200,17 +293,135 @@ function renderMetrics() {
   `;
 }
 
+function renderRatingButtons(field, currentValue, label) {
+  return Array.from({ length: 5 }, (_, index) => {
+    const value = index + 1;
+    const isActive = value <= Number(currentValue || 0);
+
+    return `
+      <button
+        class="profile-star ${isActive ? "is-active" : ""}"
+        type="button"
+        data-profile-rating="${field}"
+        data-rating-value="${value}"
+        aria-label="${escapeHtml(label)} ${value} de 5 estrelas"
+      >
+        ${isActive ? "★" : "☆"}
+      </button>
+    `;
+  }).join("");
+}
+
+function renderPedagogicalProfile() {
+  if (!pedagogicalProfilePanel) {
+    return;
+  }
+
+  const selectedStudent = getSelectedStudent();
+
+  if (!activityState.selectedStudentId) {
+    pedagogicalProfilePanel.innerHTML = `
+      <span class="panel-label">Perfil pedagÃ³gico do aluno</span>
+      <h2>Feedback geral</h2>
+      <p>Selecione um aluno para editar estrelas, evoluÃ§Ã£o semanal e observaÃ§Ãµes gerais.</p>
+    `;
+    return;
+  }
+
+  if (feedbackProfileState.isLoading) {
+    pedagogicalProfilePanel.innerHTML = `
+      <span class="panel-label">Perfil pedagÃ³gico do aluno</span>
+      <h2>Carregando feedback geral</h2>
+      <p>Buscando o perfil pedagÃ³gico de ${escapeHtml(selectedStudent?.name || "este aluno")}.</p>
+    `;
+    return;
+  }
+
+  const profile = normalizeFeedbackProfile(feedbackProfileState.profile);
+
+  pedagogicalProfilePanel.innerHTML = `
+    <form class="pedagogical-profile-form" data-pedagogical-profile-form>
+      <div class="pedagogical-profile-heading">
+        <div>
+          <span class="panel-label">Perfil pedagÃ³gico do aluno</span>
+          <h2>Feedback geral de ${escapeHtml(selectedStudent?.name || "aluno")}</h2>
+          <p>EvoluÃ§Ã£o semanal, habilidades e comentÃ¡rios gerais separados das atividades especÃ­ficas.</p>
+        </div>
+        ${
+          profile.updated_at
+            ? `<small>Atualizado em ${formatDate(profile.updated_at)}</small>`
+            : "<small>Ainda nÃ£o salvo</small>"
+        }
+      </div>
+
+      <div class="profile-rating-grid" aria-label="Habilidades do aluno">
+        ${skillRatings
+          .map(
+            (skill) => `
+              <div class="profile-rating-row">
+                <span>${skill.label}</span>
+                <div class="profile-stars">
+                  ${renderRatingButtons(skill.key, profile[skill.key], skill.label)}
+                </div>
+              </div>
+            `
+          )
+          .join("")}
+      </div>
+
+      <label class="field profile-comment-field">
+        <span>ComentÃ¡rio geral da professora</span>
+        <textarea
+          name="teacher_comment"
+          data-profile-comment
+          rows="5"
+          placeholder="Ex: Aluno evoluiu bastante em conversaÃ§Ã£o esta semana. Demonstrou dificuldade em interpretaÃ§Ã£o de textos longos."
+        >${escapeHtml(profile.teacher_comment)}</textarea>
+      </label>
+
+      ${feedbackProfileState.message ? `<p class="dashboard-message">${escapeHtml(feedbackProfileState.message)}</p>` : ""}
+      <button class="publish-button" type="submit">Salvar feedback geral</button>
+    </form>
+  `;
+
+  pedagogicalProfilePanel.querySelectorAll("[data-profile-rating]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const comment = pedagogicalProfilePanel.querySelector("[data-profile-comment]")?.value || "";
+      feedbackProfileState.profile = normalizeFeedbackProfile(feedbackProfileState.profile);
+      feedbackProfileState.profile.teacher_comment = comment;
+      feedbackProfileState.profile[button.dataset.profileRating] = Number(button.dataset.ratingValue);
+      renderPedagogicalProfile();
+    });
+  });
+
+  pedagogicalProfilePanel
+    .querySelector("[data-pedagogical-profile-form]")
+    ?.addEventListener("submit", savePedagogicalProfile);
+}
+
 function renderAssignments() {
   const assignments = getFilteredAssignments();
+  const selectedStudent = getSelectedStudent();
 
   renderMetrics();
+
+  if (!activityState.selectedStudentId) {
+    assignmentList.innerHTML = `
+      <article class="empty-state">
+        <span class="status status--pending">Seleção</span>
+        <h3>Selecione um aluno</h3>
+        <p>Escolha um aluno no topo da página para visualizar atividades, progresso e correções.</p>
+      </article>
+    `;
+    return;
+  }
 
   if (!assignments.length) {
     assignmentList.innerHTML = `
       <article class="empty-state">
         <span class="status status--pending">Sem registros</span>
-        <h3>Nenhuma atividade encontrada</h3>
-        <p>Quando uma atividade for enviada a um aluno, ela aparecerá nesta fila.</p>
+        <h3>Nenhuma atividade encontrada para este aluno.</h3>
+        <p>Quando uma atividade for enviada para ${escapeHtml(selectedStudent?.name || "este aluno")}, ela aparecerá nesta fila.</p>
       </article>
     `;
     return;
@@ -247,7 +458,11 @@ function renderAssignments() {
 
   assignmentList.querySelectorAll("[data-assignment-id]").forEach((button) => {
     button.addEventListener("click", () => {
-      openAssignment(button.dataset.assignmentId);
+      const assignmentId = button.dataset.assignmentId;
+
+      if (isUuid(assignmentId)) {
+        openAssignment(assignmentId);
+      }
     });
   });
 }
@@ -357,6 +572,14 @@ function renderDetail(assignment) {
 }
 
 async function openAssignment(assignmentId) {
+  if (!isUuid(assignmentId)) {
+    setDetailPlaceholder("Atividade indisponível", "Não foi possível abrir os detalhes desta atividade.");
+    return;
+  }
+
+  const localDetailVersion = ++activityState.detailVersion;
+  const studentIdAtRequestStart = activityState.selectedStudentId;
+
   activityState.selectedId = assignmentId;
   renderAssignments();
 
@@ -368,10 +591,30 @@ async function openAssignment(assignmentId) {
 
   try {
     const assignment = await fetchAdminApi(`/teacher/activities/${assignmentId}`);
+
+    if (
+      localDetailVersion !== activityState.detailVersion ||
+      studentIdAtRequestStart !== activityState.selectedStudentId
+    ) {
+      return;
+    }
+
+    if (!assignment || assignment.student_id !== activityState.selectedStudentId) {
+      setDetailPlaceholder("Atividade indisponível", "A atividade selecionada não pertence ao aluno em acompanhamento.");
+      return;
+    }
+
     replaceAssignment(assignment);
     renderAssignments();
     renderDetail(assignment);
   } catch (error) {
+    if (
+      localDetailVersion !== activityState.detailVersion ||
+      studentIdAtRequestStart !== activityState.selectedStudentId
+    ) {
+      return;
+    }
+
     console.error("Erro ao abrir atividade:", error);
     detailPanel.innerHTML = `
       <span class="panel-label">Erro</span>
@@ -384,7 +627,7 @@ async function openAssignment(assignmentId) {
 async function saveReview(event) {
   event.preventDefault();
 
-  if (!activityState.selectedId) {
+  if (!isUuid(activityState.selectedId)) {
     return;
   }
 
@@ -418,23 +661,130 @@ async function saveReview(event) {
   }
 }
 
+async function savePedagogicalProfile(event) {
+  event.preventDefault();
+
+  if (!isUuid(activityState.selectedStudentId)) {
+    return;
+  }
+
+  const profile = normalizeFeedbackProfile(feedbackProfileState.profile);
+  const formData = new FormData(event.currentTarget);
+  const payload = {
+    speaking_rating: profile.speaking_rating,
+    listening_rating: profile.listening_rating,
+    writing_rating: profile.writing_rating,
+    reading_rating: profile.reading_rating,
+    teacher_comment: formData.get("teacher_comment"),
+  };
+
+  try {
+    const updatedProfile = await fetchAdminApi(
+      `/students/${activityState.selectedStudentId}/feedback-profile`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }
+    );
+
+    feedbackProfileState.profile = normalizeFeedbackProfile(updatedProfile);
+    feedbackProfileState.message = "Feedback geral salvo com sucesso.";
+    renderPedagogicalProfile();
+
+    window.setTimeout(() => {
+      feedbackProfileState.message = "";
+      renderPedagogicalProfile();
+    }, 2800);
+  } catch (error) {
+    console.error("Erro ao salvar feedback geral:", error);
+    feedbackProfileState.message = error.message;
+    renderPedagogicalProfile();
+  }
+}
+
+async function loadPedagogicalProfile() {
+  const localProfileVersion = ++activityState.profileVersion;
+  feedbackProfileState.profile = null;
+  feedbackProfileState.message = "";
+  feedbackProfileState.isLoading = Boolean(activityState.selectedStudentId);
+  renderPedagogicalProfile();
+
+  if (!activityState.selectedStudentId) {
+    feedbackProfileState.isLoading = false;
+    renderPedagogicalProfile();
+    return;
+  }
+
+  try {
+    const profile = await fetchAdminApi(
+      `/students/${activityState.selectedStudentId}/feedback-profile`
+    );
+
+    if (localProfileVersion !== activityState.profileVersion) {
+      return;
+    }
+
+    feedbackProfileState.profile = normalizeFeedbackProfile(profile);
+  } catch (error) {
+    if (localProfileVersion !== activityState.profileVersion) {
+      return;
+    }
+
+    console.error("Erro ao carregar feedback geral:", error);
+    feedbackProfileState.message = error.message;
+  } finally {
+    if (localProfileVersion === activityState.profileVersion) {
+      feedbackProfileState.isLoading = false;
+      renderPedagogicalProfile();
+    }
+  }
+}
+
 async function loadAssignments() {
+  const localLoadVersion = ++activityState.loadVersion;
+  activityState.detailVersion += 1;
+  activityState.items = [];
+  activityState.selectedId = null;
+  activityState.message = "";
+  renderMetrics();
+
+  if (!activityState.selectedStudentId) {
+    renderAssignments();
+    setDetailPlaceholder();
+    return;
+  }
+
+  const selectedStudent = getSelectedStudent();
+
   assignmentList.innerHTML = `
     <article class="empty-state">
       <span class="status status--in-progress">Carregando</span>
       <h3>Buscando atividades</h3>
-      <p>Aguarde enquanto carregamos a fila de acompanhamento.</p>
+      <p>Aguarde enquanto carregamos a fila de ${escapeHtml(selectedStudent?.name || "este aluno")}.</p>
     </article>
   `;
+  setDetailPlaceholder("Carregando acompanhamento", "As atividades do aluno selecionado estão sendo carregadas.");
 
   try {
-    activityState.items = await fetchAdminApi("/teacher/activities");
+    const assignments = await fetchAdminApi(`/activities?studentId=${encodeURIComponent(activityState.selectedStudentId)}`);
+
+    if (localLoadVersion !== activityState.loadVersion) {
+      return;
+    }
+
+    activityState.items = normalizeAssignments(assignments);
     renderAssignments();
 
     if (activityState.items.length) {
       openAssignment(activityState.items[0].assignment_id);
+    } else {
+      setDetailPlaceholder();
     }
   } catch (error) {
+    if (localLoadVersion !== activityState.loadVersion) {
+      return;
+    }
+
     console.error("Erro ao carregar atividades:", error);
     assignmentList.innerHTML = `
       <article class="empty-state">
@@ -446,13 +796,69 @@ async function loadAssignments() {
   }
 }
 
+async function loadStudents() {
+  studentFilter.disabled = true;
+  studentFilter.innerHTML = '<option value="">Carregando alunos...</option>';
+  studentFilterStatus.textContent = "Carregando alunos cadastrados...";
+  renderMetrics();
+
+  try {
+    activityState.students = await fetchAdminApi("/students");
+
+    if (!activityState.students.length) {
+      activityState.selectedStudentId = "";
+      localStorage.removeItem(SELECTED_STUDENT_KEY);
+      renderStudentFilter();
+      await loadPedagogicalProfile();
+      renderAssignments();
+      setDetailPlaceholder("Nenhum aluno cadastrado", "Cadastre alunos para acompanhar atividades e feedbacks.");
+      return;
+    }
+
+    const storedStudentIsValid = activityState.students.some(
+      (student) => student.id === activityState.selectedStudentId
+    );
+
+    if (!storedStudentIsValid) {
+      activityState.selectedStudentId = activityState.students[0].id;
+      localStorage.setItem(SELECTED_STUDENT_KEY, activityState.selectedStudentId);
+    }
+
+    renderStudentFilter();
+    await Promise.all([loadPedagogicalProfile(), loadAssignments()]);
+  } catch (error) {
+    console.error("Erro ao carregar alunos:", error);
+    activityState.students = [];
+    activityState.selectedStudentId = "";
+    feedbackProfileState.profile = null;
+    feedbackProfileState.message = "";
+    feedbackProfileState.isLoading = false;
+    studentFilter.disabled = true;
+    studentFilter.innerHTML = '<option value="">Erro ao carregar alunos</option>';
+    studentFilterStatus.textContent = error.message;
+    renderPedagogicalProfile();
+    renderAssignments();
+    setDetailPlaceholder("Alunos indisponíveis", error.message);
+  }
+}
+
 statusFilter.addEventListener("change", renderAssignments);
 
+studentFilter.addEventListener("change", async () => {
+  activityState.selectedStudentId = studentFilter.value;
+  activityState.message = "";
+  activityState.selectedId = null;
+  activityState.items = [];
+  localStorage.setItem(SELECTED_STUDENT_KEY, activityState.selectedStudentId);
+  statusFilter.value = "all";
+  renderStudentFilter();
+  await Promise.all([loadPedagogicalProfile(), loadAssignments()]);
+});
+
 adminLogoutButton.addEventListener("click", () => {
-  clearAdminSession();
-  window.location.href = "admin-login.html";
+  window.EnglishStudioAuth?.logout();
 });
 
 if (requireTeacherSession()) {
-  loadAssignments();
+  loadStudents();
 }

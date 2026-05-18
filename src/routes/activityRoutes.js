@@ -9,7 +9,7 @@ const teacherOnly = [authMiddleware, roleMiddleware(["teacher"])];
 const studentOnly = [authMiddleware, roleMiddleware(["student"])];
 
 router.post("/activities", teacherOnly, activityController.create);
-router.get("/activities", activityController.list);
+router.get("/activities", teacherOnly, activityController.list);
 router.get("/teacher/activities", teacherOnly, activityController.listTeacherAssignments);
 router.get("/teacher/activities/:assignmentId", teacherOnly, activityController.getTeacherAssignment);
 router.patch("/teacher/activities/:assignmentId/review", teacherOnly, activityController.reviewTeacherAssignment);
