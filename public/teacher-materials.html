@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Tela da professora para enviar materiais de estudo personalizados aos alunos."
+    />
+    <title>Materiais de estudo | English Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/teacher-create-activity.css" />
+    <link rel="stylesheet" href="css/teacher-materials.css" />
+  </head>
+  <body>
+    <header class="teacher-header">
+      <span class="brand" aria-label="English Studio">
+        <span class="brand__mark">E</span>
+        <span class="brand__text">English Studio</span>
+      </span>
+
+      <div class="teacher-header__actions">
+        <a class="header-link" href="admin-schedule.html">Agenda</a>
+        <a class="header-link" href="teacher-create-activity.html">Criar atividade</a>
+        <a class="header-link" href="admin-activities.html">Acompanhamento</a>
+        <a class="header-link" href="teacher-materials.html">Materiais de estudo</a>
+        <button class="logout-link" type="button" data-admin-logout>Sair</button>
+      </div>
+    </header>
+
+    <main class="teacher-main">
+      <section class="view-heading">
+        <p class="eyebrow">Professora</p>
+        <h1>Materiais de estudo</h1>
+        <p data-admin-greeting>Envie conteúdos personalizados para cada aluno.</p>
+      </section>
+
+      <section class="materials-layout">
+        <form class="form-card material-form" data-material-form>
+          <div>
+            <span class="panel-label">Novo material</span>
+            <h2 data-form-title>Enviar material</h2>
+          </div>
+
+          <label class="field">
+            <span>Aluno destinatário</span>
+            <select name="student_id" data-student-select required>
+              <option value="">Carregando alunos...</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Título do material</span>
+            <input type="text" name="title" placeholder="Ex: Vocabulary for travel" autocomplete="off" required />
+          </label>
+
+          <label class="field">
+            <span>Descrição curta</span>
+            <textarea
+              name="description"
+              rows="4"
+              placeholder="Explique como o aluno deve usar este material."
+            ></textarea>
+          </label>
+
+          <label class="field">
+            <span>Tipo do material</span>
+            <select name="type" required>
+              <option value="pdf">PDF</option>
+              <option value="video">Vídeo</option>
+              <option value="link">Link</option>
+              <option value="exercise">Exercício</option>
+              <option value="audio">Áudio</option>
+              <option value="document">Documento</option>
+              <option value="vocabulary">Vocabulário</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Link do material</span>
+            <input type="url" name="url" placeholder="https://..." required />
+          </label>
+
+          <div class="material-form__actions">
+            <button class="publish-button" type="submit" data-submit-material>Enviar material</button>
+            <button class="secondary-button" type="button" data-cancel-edit hidden>Cancelar edição</button>
+          </div>
+
+          <p class="auth-status" data-material-message></p>
+        </form>
+
+        <section class="form-card sent-materials-panel">
+          <div class="sent-materials-panel__header">
+            <div>
+              <span class="panel-label">Materiais enviados</span>
+              <h2>Biblioteca do aluno</h2>
+            </div>
+
+            <label class="field material-filter">
+              <span>Filtrar aluno</span>
+              <select data-filter-student>
+                <option value="">Todos os alunos</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="teacher-material-list" data-material-list></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="js/auth-session.js" defer></script>
+    <script src="js/teacher-materials.js" defer></script>
+  </body>
+</html>

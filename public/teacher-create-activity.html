@@ -14,18 +14,20 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="teacher-create-activity.css" />
+    <link rel="stylesheet" href="css/teacher-create-activity.css" />
   </head>
   <body>
     <header class="teacher-header">
-      <a class="brand" href="index.html" aria-label="Voltar para a landing page">
+      <span class="brand" aria-label="English Studio">
         <span class="brand__mark">E</span>
         <span class="brand__text">English Studio</span>
-      </a>
+      </span>
 
       <div class="teacher-header__actions">
-        <a class="header-link" href="admin-activities.html">Acompanhamento</a>
         <a class="header-link" href="admin-schedule.html">Agenda</a>
+        <a class="header-link" href="teacher-create-activity.html">Criar atividade</a>
+        <a class="header-link" href="admin-activities.html">Acompanhamento</a>
+        <a class="header-link" href="teacher-materials.html">Materiais de estudo</a>
         <button class="logout-link" type="button" data-admin-logout>Sair</button>
       </div>
     </header>
@@ -147,7 +149,7 @@
       </form>
     </main>
 
-    <script src="auth-session.js" defer></script>
-    <script src="teacher-create-activity.js" defer></script>
+    <script src="js/auth-session.js" defer></script>
+    <script src="js/teacher-create-activity.js" defer></script>
   </body>
 </html>

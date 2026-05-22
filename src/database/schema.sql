@@ -3,11 +3,27 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(120) NOT NULL,
-  email VARCHAR(160) NOT NULL UNIQUE,
+  email VARCHAR(160) NOT NULL UNIQUE CHECK (email = lower(trim(email))),
   password_hash TEXT NOT NULL,
   role VARCHAR(20) NOT NULL CHECK (role IN ('teacher', 'student')),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_idx
+  ON users (lower(email));
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'users_email_normalized_check'
+  ) THEN
+    ALTER TABLE users
+      ADD CONSTRAINT users_email_normalized_check
+      CHECK (email = lower(trim(email)));
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS activities (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -27,18 +43,14 @@ CREATE TABLE IF NOT EXISTS activity_students (
   assigned_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   completed_at TIMESTAMP WITH TIME ZONE,
   teacher_feedback TEXT,
-  teacher_summary TEXT,
   teacher_grade INTEGER,
-  teacher_observations TEXT,
   reviewed_at TIMESTAMP WITH TIME ZONE,
   UNIQUE (activity_id, student_id)
 );
 
 ALTER TABLE activity_students
   ADD COLUMN IF NOT EXISTS teacher_feedback TEXT,
-  ADD COLUMN IF NOT EXISTS teacher_summary TEXT,
   ADD COLUMN IF NOT EXISTS teacher_grade INTEGER,
-  ADD COLUMN IF NOT EXISTS teacher_observations TEXT,
   ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP WITH TIME ZONE;
 
 DO $$
@@ -76,6 +88,25 @@ CREATE TABLE IF NOT EXISTS student_feedback_profiles (
   CHECK (writing_rating BETWEEN 0 AND 5),
   CHECK (reading_rating BETWEEN 0 AND 5)
 );
+
+CREATE TABLE IF NOT EXISTS study_materials (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  teacher_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR(180) NOT NULL,
+  description TEXT,
+  type VARCHAR(30) NOT NULL,
+  url TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  CHECK (type IN ('pdf', 'video', 'link', 'exercise', 'audio', 'document', 'vocabulary'))
+);
+
+CREATE INDEX IF NOT EXISTS study_materials_student_idx
+  ON study_materials (student_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS study_materials_teacher_idx
+  ON study_materials (teacher_id, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS class_schedules (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -37,9 +37,7 @@ async function createActivity({
             assigned_at,
             completed_at,
             teacher_feedback,
-            teacher_summary,
             teacher_grade,
-            teacher_observations,
             reviewed_at
         `,
         [activity.id, student_id]
@@ -98,9 +96,7 @@ async function findAllActivities(teacherId) {
                 'assigned_at', ast.assigned_at,
                 'completed_at', ast.completed_at,
                 'teacher_feedback', ast.teacher_feedback,
-                'teacher_summary', ast.teacher_summary,
                 'teacher_grade', ast.teacher_grade,
-                'teacher_observations', ast.teacher_observations,
                 'reviewed_at', ast.reviewed_at
               )
               ORDER BY ast.assigned_at DESC
@@ -153,9 +149,7 @@ async function findActivitiesByStudent(studentId) {
         activity_students.assigned_at,
         activity_students.completed_at,
         activity_students.teacher_feedback,
-        activity_students.teacher_summary,
         activity_students.teacher_grade,
-        activity_students.teacher_observations,
         activity_students.reviewed_at,
         COALESCE(
           (
@@ -200,9 +194,7 @@ async function findActivityByStudent(activityId, studentId) {
         activity_students.assigned_at,
         activity_students.completed_at,
         activity_students.teacher_feedback,
-        activity_students.teacher_summary,
         activity_students.teacher_grade,
-        activity_students.teacher_observations,
         activity_students.reviewed_at,
         COALESCE(
           (
@@ -271,9 +263,7 @@ async function findTeacherActivityAssignments(teacherId, studentId = null) {
         ast.assigned_at,
         ast.completed_at,
         ast.teacher_feedback,
-        ast.teacher_summary,
         ast.teacher_grade,
-        ast.teacher_observations,
         ast.reviewed_at,
         a.title,
         a.description,
@@ -332,9 +322,7 @@ async function findTeacherActivityAssignmentById(assignmentId, teacherId) {
         ast.assigned_at,
         ast.completed_at,
         ast.teacher_feedback,
-        ast.teacher_summary,
         ast.teacher_grade,
-        ast.teacher_observations,
         ast.reviewed_at,
         a.title,
         a.description,
@@ -382,29 +370,25 @@ async function findTeacherActivityAssignmentById(assignmentId, teacherId) {
 async function reviewTeacherActivityAssignment(
   assignmentId,
   teacherId,
-  { teacher_feedback, teacher_summary, teacher_grade, teacher_observations }
+  { teacher_feedback, teacher_grade }
 ) {
   const result = await pool.query(
     `
       UPDATE activity_students ast
       SET
         teacher_feedback = $1,
-        teacher_summary = $2,
-        teacher_grade = $3,
-        teacher_observations = $4,
+        teacher_grade = $2,
         status = 'reviewed',
         reviewed_at = NOW()
       FROM activities a
       WHERE ast.activity_id = a.id
-        AND ast.id = $5
-        AND a.teacher_id = $6
+        AND ast.id = $3
+        AND a.teacher_id = $4
       RETURNING ast.id
     `,
     [
       teacher_feedback,
-      teacher_summary,
       teacher_grade,
-      teacher_observations,
       assignmentId,
       teacherId,
     ]

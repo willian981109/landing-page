@@ -306,6 +306,66 @@ h3 {
   margin-top: 0.1rem;
 }
 
+.pedagogical-profile-summary {
+  align-items: center;
+  display: grid;
+  gap: 1rem;
+}
+
+.pedagogical-profile-summary h2 {
+  margin-bottom: 0.35rem;
+}
+
+.profile-toggle-button {
+  align-items: center;
+  background: rgba(245, 245, 240, 0.82);
+  border: 1px solid rgba(194, 164, 111, 0.58);
+  color: var(--green-900);
+  display: inline-flex;
+  font-size: 0.76rem;
+  font-weight: 800;
+  gap: 0.5rem;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.7rem 0.9rem;
+  text-transform: uppercase;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.profile-toggle-button:hover {
+  background: var(--white);
+  border-color: var(--gold);
+  transform: translateY(-1px);
+}
+
+.profile-toggle-button__icon {
+  display: inline-block;
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 220ms ease;
+}
+
+.pedagogical-profile-form.is-expanded .profile-toggle-button__icon {
+  transform: rotate(180deg);
+}
+
+.profile-collapsible {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateY(-0.35rem);
+  transition: max-height 320ms ease, opacity 240ms ease, transform 240ms ease, margin-top 240ms ease;
+}
+
+.pedagogical-profile-form.is-expanded .profile-collapsible {
+  margin-top: 1rem;
+  max-height: 900px;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
 .dashboard-layout {
   display: grid;
   gap: 1rem;
@@ -615,6 +675,10 @@ h3 {
     grid-template-columns: minmax(0, 1fr) minmax(240px, 0.36fr);
   }
 
+  .pedagogical-profile-summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
   .panel-toolbar {
     grid-template-columns: 1fr minmax(180px, 0.32fr);
   }
@@ -672,4 +736,100 @@ h3 {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Premium light visual system */
+:root {
+  --green-900: #0f2a21;
+  --green-800: #183d30;
+  --olive: #596b4f;
+  --gold: #c4a15a;
+  --cream: #fffaf2;
+  --white: #ffffff;
+  --ink: #17211b;
+  --muted: #667268;
+  --line: rgba(15, 42, 33, 0.13);
+  --shadow: 0 24px 80px rgba(15, 42, 33, 0.1);
+  --radius-sm: 0.55rem;
+  --radius-md: 0.85rem;
+  --radius-lg: 1.1rem;
+}
+
+body {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(196, 161, 90, 0.12), transparent 26rem),
+    radial-gradient(circle at 88% 16%, rgba(15, 42, 33, 0.08), transparent 30rem),
+    linear-gradient(180deg, #fffdf8 0%, var(--cream) 100%);
+}
+
+.teacher-header,
+.metric-card,
+.student-selector-panel,
+.pedagogical-profile-panel,
+.activity-panel,
+.detail-panel,
+.empty-state,
+.profile-rating-row,
+.profile-toggle-button,
+.profile-collapsible,
+.assignment-row,
+.status,
+.dashboard-message,
+.detail-grid article,
+.material-item,
+.material-item a,
+.correction-box,
+.publish-button,
+input,
+select,
+textarea,
+button {
+  border-radius: var(--radius-md);
+}
+
+.brand__mark,
+.material-item__icon,
+.profile-star {
+  border-radius: var(--radius-sm);
+}
+
+.teacher-header {
+  background: rgba(255, 250, 242, 0.9);
+  box-shadow: 0 12px 42px rgba(15, 42, 33, 0.05);
+}
+
+.metric-card,
+.student-selector-panel,
+.pedagogical-profile-panel,
+.activity-panel,
+.detail-panel,
+.empty-state {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(15, 42, 33, 0.12);
+  box-shadow: var(--shadow);
+}
+
+.filter-field select,
+.field input,
+.field textarea,
+.profile-rating-row,
+.detail-grid article,
+.assignment-row,
+.correction-box {
+  background: rgba(255, 250, 242, 0.72);
+  border-color: rgba(15, 42, 33, 0.12);
+}
+
+.assignment-row:hover,
+.assignment-row.active {
+  border-color: rgba(196, 161, 90, 0.62);
+  box-shadow: 0 18px 54px rgba(15, 42, 33, 0.11);
+}
+
+.profile-toggle-button {
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.publish-button {
+  background: var(--gold);
 }

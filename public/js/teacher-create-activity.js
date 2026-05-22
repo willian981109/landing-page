@@ -47,7 +47,7 @@ const studentStatus = document.querySelector("[data-student-status]");
 const materials = [];
 let selectedMaterialKind = "link";
 
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = "";
 const ADMIN_TOKEN_KEY = "englishStudioAdminToken";
 const ADMIN_USER_KEY = "englishStudioAdminUser";
 
@@ -56,7 +56,7 @@ function getAssignmentControls() {
 }
 
 function getAdminToken() {
-  return localStorage.getItem(ADMIN_TOKEN_KEY);
+  return window.EnglishStudioAuth?.getSession("teacher")?.token || "";
 }
 
 function getAuthHeaders() {
@@ -66,22 +66,11 @@ function getAuthHeaders() {
 }
 
 function clearAdminSession() {
-  window.EnglishStudioAuth?.clearSession();
+  window.EnglishStudioAuth?.clearTeacherSession();
 }
 
 function getAdminUser() {
-  const storedUser = localStorage.getItem(ADMIN_USER_KEY);
-
-  if (!storedUser) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(storedUser);
-  } catch (error) {
-    localStorage.removeItem(ADMIN_USER_KEY);
-    return null;
-  }
+  return window.EnglishStudioAuth?.getSession("teacher")?.user || null;
 }
 
 function getTokenPayload(token) {
@@ -113,10 +102,7 @@ function setAdminAreaLocked(isLocked) {
 }
 
 function hasTeacherSession() {
-  const user = getAdminUser();
-  const token = getAdminToken();
-
-  return Boolean(token && user?.role === "teacher" && isTeacherTokenValid(token));
+  return Boolean(window.EnglishStudioAuth?.getSession("teacher"));
 }
 
 function requireTeacherSession() {
@@ -127,16 +113,17 @@ function requireTeacherSession() {
     return true;
   }
 
-  window.EnglishStudioAuth?.logout();
+  redirectToLogin();
   return false;
 }
 
 function redirectToLogin(message) {
   if (message) {
-    alert(message);
+    setStudentStatus(message, "error");
   }
 
-  window.EnglishStudioAuth?.logout();
+  window.EnglishStudioAuth?.clearTeacherSession();
+  window.EnglishStudioAuth?.redirectHome();
 }
 
 function escapeHtml(value) {
@@ -179,7 +166,7 @@ async function loadStudents() {
   if (!token) {
     studentSelect.innerHTML = '<option value="">Faça login novamente</option>';
     setStudentStatus("Sessão inválida. Redirecionando para login...", "error");
-    window.EnglishStudioAuth?.logout();
+    redirectToLogin();
     return;
   }
 
@@ -193,10 +180,16 @@ async function loadStudents() {
       },
     });
 
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       studentSelect.innerHTML = '<option value="">Faça login novamente</option>';
       setStudentStatus("Sessão expirada. Redirecionando para login...", "error");
-      window.EnglishStudioAuth?.logout();
+      redirectToLogin();
+      return;
+    }
+
+    if (response.status === 403) {
+      studentSelect.innerHTML = '<option value="">Acesso negado</option>';
+      setStudentStatus("Sua conta nao tem permissao para carregar alunos.", "error");
       return;
     }
 
@@ -333,7 +326,7 @@ addMaterialButton.addEventListener("click", addMaterial);
 cancelMaterialButton.addEventListener("click", closeMaterialDraft);
 
 adminLogoutButton.addEventListener("click", () => {
-  window.EnglishStudioAuth?.logout();
+  window.EnglishStudioAuth?.logout("teacher");
 });
 
 document.addEventListener("click", (event) => {
@@ -394,9 +387,13 @@ form.addEventListener("submit", async (event) => {
       body: JSON.stringify(payload),
     });
 
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       redirectToLogin("Sua sessão expirou. Faça login novamente.");
       return;
+    }
+
+    if (response.status === 403) {
+      throw new Error("Sua conta nao tem permissao para criar atividades.");
     }
 
     if (!response.ok) {

@@ -6,6 +6,8 @@ const { pool } = require("../src/database/pool");
 
 const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3000";
 const TEST_PREFIX = `security.${Date.now()}`;
+const TEST_PASSWORD = "Test#1234";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Admin#2026";
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -48,7 +50,7 @@ function authHeaders(token) {
 }
 
 async function createUser({ name, email, role }) {
-  const passwordHash = await bcrypt.hash("123456", 10);
+  const passwordHash = await bcrypt.hash(TEST_PASSWORD, 12);
   const result = await pool.query(
     `
       INSERT INTO users (name, email, password_hash, role)
@@ -61,7 +63,7 @@ async function createUser({ name, email, role }) {
   return result.rows[0];
 }
 
-async function login(email, password = "123456") {
+async function login(email, password = TEST_PASSWORD) {
   const data = await requestOk("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
@@ -84,10 +86,11 @@ async function cleanup(createdActivityIds = []) {
 
 async function testSecurityFlow() {
   const createdActivityIds = [];
+  const createdMaterialIds = [];
 
   try {
     console.log("1. Login baseline teacher");
-    const adminLogin = await login("admin@english.com");
+    const adminLogin = await login("admin@english.com", ADMIN_PASSWORD);
     const adminToken = adminLogin.token;
 
     console.log("2. Create temporary users");
@@ -125,6 +128,13 @@ async function testSecurityFlow() {
       headers: authHeaders(studentOneLogin.token),
     });
     await expectStatus("/my-activities", 403, {
+      headers: authHeaders(adminToken),
+    });
+    await expectStatus("/teacher/materials", 401);
+    await expectStatus("/teacher/materials", 403, {
+      headers: authHeaders(studentOneLogin.token),
+    });
+    await expectStatus("/my-materials", 403, {
       headers: authHeaders(adminToken),
     });
     await expectStatus("/activities?studentId=not-a-uuid", 400, {
@@ -210,10 +220,69 @@ async function testSecurityFlow() {
       throw new Error("Other teacher received activities owned by the baseline teacher");
     }
 
-    console.log("7. Validate auth failures");
+    console.log("7. Validate study material isolation");
+    const createdMaterial = await requestOk("/teacher/materials", {
+      method: "POST",
+      headers: authHeaders(adminToken),
+      body: JSON.stringify({
+        student_id: studentOne.id,
+        title: "Security material",
+        description: "Only student one should see this",
+        type: "pdf",
+        url: "https://example.com/security-material.pdf",
+      }),
+    });
+    createdMaterialIds.push(createdMaterial.id);
+
+    const studentOneMaterials = await requestOk("/my-materials", {
+      headers: authHeaders(studentOneLogin.token),
+    });
+
+    if (!studentOneMaterials.some((material) => material.id === createdMaterial.id)) {
+      throw new Error("Assigned student could not access own material");
+    }
+
+    const studentTwoMaterials = await requestOk("/my-materials", {
+      headers: authHeaders(studentTwoLogin.token),
+    });
+
+    if (studentTwoMaterials.some((material) => material.id === createdMaterial.id)) {
+      throw new Error("Study material leaked to another student");
+    }
+
+    await expectStatus(`/teacher/materials/${createdMaterial.id}`, 404, {
+      method: "PATCH",
+      headers: authHeaders(otherTeacherLogin.token),
+      body: JSON.stringify({
+        student_id: studentOne.id,
+        title: "Unauthorized material update",
+        description: "Should not update",
+        type: "link",
+        url: "https://example.com/unauthorized",
+      }),
+    });
+
+    await expectStatus(`/teacher/materials/${createdMaterial.id}`, 404, {
+      method: "DELETE",
+      headers: authHeaders(otherTeacherLogin.token),
+    });
+
+    console.log("8. Validate auth failures");
     await expectStatus("/auth/login", 401, {
       method: "POST",
       body: JSON.stringify({ email: "admin@english.com", password: "wrong-password" }),
+    });
+    await expectStatus("/auth/login", 400, {
+      method: "POST",
+      body: JSON.stringify({ email: "not-an-email", password: "whatever" }),
+    });
+    await expectStatus("/auth/register", 400, {
+      method: "POST",
+      body: JSON.stringify({
+        name: "Weak Password",
+        email: `${TEST_PREFIX}.weak@english.test`,
+        password: "weak",
+      }),
     });
 
     const registered = await requestOk("/auth/register", {
@@ -221,7 +290,7 @@ async function testSecurityFlow() {
       body: JSON.stringify({
         name: "Security Registered Student",
         email: `${TEST_PREFIX}.registered@english.test`,
-        password: "123456",
+        password: TEST_PASSWORD,
         role: "teacher",
       }),
     });
@@ -232,6 +301,9 @@ async function testSecurityFlow() {
 
     console.log("Security flow completed successfully");
   } finally {
+    for (const materialId of createdMaterialIds) {
+      await pool.query("DELETE FROM study_materials WHERE id = $1", [materialId]);
+    }
     await cleanup(createdActivityIds);
   }
 }

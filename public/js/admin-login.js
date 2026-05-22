@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = "";
 const ADMIN_TOKEN_KEY = "englishStudioAdminToken";
 const ADMIN_USER_KEY = "englishStudioAdminUser";
 
@@ -15,60 +15,59 @@ function setAuthMessage(message, type = "") {
   authMessage.textContent = message;
 }
 
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isEmailValid(email) {
+  return /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]{2,}$/i.test(email);
+}
+
+function validateEmailInput(input) {
+  if (!input) {
+    return true;
+  }
+
+  input.value = normalizeEmail(input.value);
+
+  if (!isEmailValid(input.value)) {
+    input.setCustomValidity("Informe um e-mail valido.");
+    return false;
+  }
+
+  input.setCustomValidity("");
+  return true;
+}
+
 function saveAdminSession({ token, user }) {
-  window.EnglishStudioAuth?.clearSession();
-  localStorage.setItem(ADMIN_TOKEN_KEY, token);
-  localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user));
+  window.EnglishStudioAuth?.saveSession("teacher", { token, user });
 }
 
 function clearAdminSession() {
-  window.EnglishStudioAuth?.clearSession();
-}
-
-function getTokenPayload(token) {
-  try {
-    const payload = token.split(".")[1];
-    return JSON.parse(atob(payload));
-  } catch (error) {
-    return null;
-  }
-}
-
-function isTeacherTokenValid(token) {
-  const payload = getTokenPayload(token);
-  const expiresAt = payload?.exp ? payload.exp * 1000 : 0;
-
-  return Boolean(payload?.role === "teacher" && expiresAt > Date.now());
+  window.EnglishStudioAuth?.clearTeacherSession();
 }
 
 function hasTeacherSession() {
-  const token = localStorage.getItem(ADMIN_TOKEN_KEY);
-  const storedUser = localStorage.getItem(ADMIN_USER_KEY);
-
-  if (!token || !storedUser) {
-    return false;
-  }
-
-  try {
-    return JSON.parse(storedUser).role === "teacher" && isTeacherTokenValid(token);
-  } catch (error) {
-    clearAdminSession();
-    return false;
-  }
+  return Boolean(window.EnglishStudioAuth?.canAutoRedirect("teacher"));
 }
 
 if (hasTeacherSession()) {
   window.location.href = "admin-schedule.html";
-} else {
-  clearAdminSession();
 }
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const formData = new FormData(loginForm);
+  const emailInput = loginForm.querySelector("[name='email']");
+
+  if (!validateEmailInput(emailInput)) {
+    emailInput.reportValidity();
+    return;
+  }
+
   const payload = {
-    email: formData.get("email"),
+    email: normalizeEmail(formData.get("email")),
     password: formData.get("password"),
   };
 

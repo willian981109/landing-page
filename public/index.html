@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
@@ -12,13 +10,22 @@
     <title>Learn English with Confidence | English Teacher</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://images.unsplash.com" />
+    <link
+      rel="preload"
+      as="image"
+      href="assets/hero-floral-editorial.png"
+      fetchpriority="high"
+    />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
+    <canvas class="floral-background" data-floral-background aria-hidden="true"></canvas>
+
     <header class="site-header" data-header>
       <a class="brand" href="#hero" aria-label="Voltar ao início">
         <span class="brand__mark">E</span>
@@ -34,7 +41,6 @@
         <a href="#word">Word of the Day</a>
         <a href="#classes">Classes</a>
         <a href="#contact">Contact</a>
-        <a href="admin-login.html">Área da Professora</a>
       </nav>
 
       <a class="student-area-link" href="login.html">Área do aluno</a>
@@ -43,6 +49,9 @@
     <main>
       <section class="hero" id="hero" aria-label="Apresentação">
         <div class="hero__overlay"></div>
+        <div class="hero__art" aria-hidden="true">
+          <img src="assets/hero-floral-editorial.png" alt="" fetchpriority="high" decoding="async" />
+        </div>
         <div class="hero__content reveal">
           <h1>Teacher Samilly</h1>
           <p class="hero__role">English Teacher</p>
@@ -61,13 +70,18 @@
       <section class="word-section section" id="word">
         <div class="section__inner reveal">
           <p class="eyebrow">Word of the Day</p>
-          <div class="word-card">
-            <h2>Graceful</h2>
-            <p class="word-card__phonetic">/&#712;&#609;re&#618;s.f&#601;l/</p>
-            <p class="word-card__meaning">que demonstra eleg&acirc;ncia, leveza e delicadeza</p>
-            <p class="word-card__example">
-              “She gave a graceful answer during the meeting.”
-            </p>
+          <div class="word-card" data-word-card>
+            <div class="word-card__topline">
+              <span class="word-card__label">Today's word</span>
+              <button class="word-card__audio" type="button" data-word-audio aria-label="Ouvir pronúncia da palavra">
+                <span aria-hidden="true"></span>
+                Listen
+              </button>
+            </div>
+            <h2 data-word-text>Graceful</h2>
+            <p class="word-card__phonetic" data-word-pronunciation>/&#712;&#609;re&#618;s.f&#601;l/</p>
+            <p class="word-card__meaning" data-word-translation>que demonstra elegância, leveza e delicadeza</p>
+            <p class="word-card__example" data-word-example>“She gave a graceful answer during the meeting.”</p>
           </div>
         </div>
       </section>
@@ -78,6 +92,9 @@
             <img
               src="https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=900&q=82"
               alt="Teacher Samilly"
+              loading="lazy"
+              decoding="async"
+              sizes="(min-width: 760px) 36vw, 92vw"
             />
           </div>
 
@@ -256,7 +273,6 @@
               </div>
             </article>
           </div>
-
         </div>
       </section>
 
@@ -266,6 +282,9 @@
             <img
               src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=82"
               alt=""
+              loading="lazy"
+              decoding="async"
+              sizes="(min-width: 760px) 42vw, 92vw"
             />
           </div>
 
@@ -289,7 +308,6 @@
           </div>
         </div>
       </section>
-
     </main>
 
     <footer class="site-footer" id="contact">
@@ -305,11 +323,11 @@
         <address>
           <a href="https://wa.me/5500000000000" target="_blank" rel="noreferrer">WhatsApp</a>
           <a href="mailto:hello@englishstudio.com">hello@englishstudio.com</a>
-          <a href="#" aria-label="Instagram">Instagram</a>
+          <a href="https://www.instagram.com/" target="_blank" rel="noreferrer" aria-label="Instagram">Instagram</a>
         </address>
       </div>
     </footer>
 
-    <script src="script.js" defer></script>
+    <script src="js/script.js" defer></script>
   </body>
 </html>

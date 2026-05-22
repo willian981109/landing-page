@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = "";
 const ADMIN_TOKEN_KEY = "englishStudioAdminToken";
 const ADMIN_USER_KEY = "englishStudioAdminUser";
 
@@ -27,19 +27,15 @@ const scheduleState = {
 };
 
 function getAdminToken() {
-  return localStorage.getItem(ADMIN_TOKEN_KEY);
+  return window.EnglishStudioAuth?.getSession("teacher")?.token || "";
 }
 
 function clearAdminSession() {
-  window.EnglishStudioAuth?.clearSession();
+  window.EnglishStudioAuth?.clearTeacherSession();
 }
 
 function getAdminUser() {
-  try {
-    return JSON.parse(localStorage.getItem(ADMIN_USER_KEY));
-  } catch (error) {
-    return null;
-  }
+  return window.EnglishStudioAuth?.getSession("teacher")?.user || null;
 }
 
 function getTokenPayload(token) {
@@ -58,20 +54,21 @@ function isTeacherTokenValid(token) {
 }
 
 function requireTeacherSession() {
-  const token = getAdminToken();
-  const user = getAdminUser();
+  const session = window.EnglishStudioAuth?.getSession("teacher");
+  const user = session?.user;
 
-  if (token && user?.role === "teacher" && isTeacherTokenValid(token)) {
+  if (session?.token && user?.role === "teacher") {
     adminGreeting.textContent = `Conectada como ${user.name}. Gerencie aulas, disponibilidades e trocas.`;
     return true;
   }
 
-  window.EnglishStudioAuth?.logout();
+  redirectToLogin();
   return false;
 }
 
 function redirectToLogin() {
-  window.EnglishStudioAuth?.logout();
+  window.EnglishStudioAuth?.clearTeacherSession();
+  window.EnglishStudioAuth?.redirectHome();
 }
 
 function escapeHtml(value) {
@@ -99,9 +96,13 @@ async function fetchAdminApi(path, options = {}) {
     },
   });
 
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401) {
     redirectToLogin();
     return null;
+  }
+
+  if (response.status === 403) {
+    throw new Error("Sua conta nao tem permissao para acessar este recurso.");
   }
 
   const data = await response.json().catch(() => ({}));
@@ -833,7 +834,7 @@ nextMonthButton.addEventListener("click", () => {
 });
 
 adminLogoutButton.addEventListener("click", () => {
-  window.EnglishStudioAuth?.logout();
+  window.EnglishStudioAuth?.logout("teacher");
 });
 
 if (requireTeacherSession()) {

@@ -7,7 +7,7 @@ const { pool } = require("../src/database/pool");
 const ADMIN_USER = {
   name: "Teacher Admin",
   email: "admin@english.com",
-  password: "123456",
+  password: process.env.ADMIN_PASSWORD || "Admin#2026",
   role: "teacher",
 };
 

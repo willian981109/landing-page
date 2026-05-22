@@ -5,6 +5,8 @@ const bcrypt = require("bcrypt");
 const { pool } = require("../src/database/pool");
 
 const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3000";
+const TEST_PASSWORD = "Test#1234";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Admin#2026";
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -37,7 +39,7 @@ async function testAdminFlow() {
     method: "POST",
     body: JSON.stringify({
       email: "admin@english.com",
-      password: "123456",
+      password: ADMIN_PASSWORD,
     }),
   });
 
@@ -52,7 +54,7 @@ async function testAdminFlow() {
   };
 
   console.log("2. Create temporary student");
-  const passwordHash = await bcrypt.hash("123456", 10);
+  const passwordHash = await bcrypt.hash(TEST_PASSWORD, 12);
   const tempStudentEmail = `test.student.${Date.now()}@english.com`;
   const studentResult = await pool.query(
     `
@@ -71,7 +73,7 @@ async function testAdminFlow() {
     method: "POST",
     body: JSON.stringify({
       email: tempStudentEmail,
-      password: "123456",
+      password: TEST_PASSWORD,
     }),
   });
 
@@ -169,7 +171,71 @@ async function testAdminFlow() {
 
   console.log("Student activity flow validated");
 
-  console.log("7. Validate shared schedule flow");
+  console.log("7. Validate study materials flow");
+  const { data: createdMaterial } = await request("/teacher/materials", {
+    method: "POST",
+    headers: authHeaders,
+    body: JSON.stringify({
+      student_id: tempStudentId,
+      title: "Travel vocabulary",
+      description: "Study before the next class",
+      type: "vocabulary",
+      url: "https://docs.google.com/document/example-material",
+    }),
+  });
+
+  if (createdMaterial.student_id !== tempStudentId || createdMaterial.type !== "vocabulary") {
+    throw new Error("POST /teacher/materials did not create a student material");
+  }
+
+  const { data: teacherMaterials } = await request(`/teacher/materials?studentId=${tempStudentId}`, {
+    headers: authHeaders,
+  });
+
+  if (!teacherMaterials.some((material) => material.id === createdMaterial.id)) {
+    throw new Error("GET /teacher/materials?studentId did not return the created material");
+  }
+
+  const { data: myMaterials } = await request("/my-materials", {
+    headers: studentAuthHeaders,
+  });
+
+  if (!myMaterials.some((material) => material.id === createdMaterial.id)) {
+    throw new Error("GET /my-materials did not return the student's material");
+  }
+
+  const { data: updatedMaterial } = await request(`/teacher/materials/${createdMaterial.id}`, {
+    method: "PATCH",
+    headers: authHeaders,
+    body: JSON.stringify({
+      student_id: tempStudentId,
+      title: "Travel vocabulary updated",
+      description: "Updated study note",
+      type: "document",
+      url: "https://docs.google.com/document/updated-material",
+    }),
+  });
+
+  if (updatedMaterial.title !== "Travel vocabulary updated" || updatedMaterial.type !== "document") {
+    throw new Error("PATCH /teacher/materials/:materialId did not update the material");
+  }
+
+  await request(`/teacher/materials/${createdMaterial.id}`, {
+    method: "DELETE",
+    headers: authHeaders,
+  });
+
+  const { data: myMaterialsAfterDelete } = await request("/my-materials", {
+    headers: studentAuthHeaders,
+  });
+
+  if (myMaterialsAfterDelete.some((material) => material.id === createdMaterial.id)) {
+    throw new Error("DELETE /teacher/materials/:materialId did not remove the material from the student");
+  }
+
+  console.log("Study materials flow validated");
+
+  console.log("8. Validate shared schedule flow");
   const { data: availability } = await request("/teacher/availability", {
     method: "POST",
     headers: authHeaders,
@@ -371,7 +437,7 @@ async function testAdminFlow() {
 
   console.log("Shared schedule flow validated");
 
-  console.log("8. Validate teacher review flow");
+  console.log("9. Validate teacher review flow");
   const { data: teacherAssignments } = await request("/teacher/activities", {
     headers: authHeaders,
   });
@@ -389,10 +455,8 @@ async function testAdminFlow() {
       method: "PATCH",
       headers: authHeaders,
       body: JSON.stringify({
-        teacher_summary: "Good completion and clear answers",
         teacher_feedback: "Review pronunciation in the second answer",
         teacher_grade: 9,
-        teacher_observations: "Next class: revisit listening speed",
       }),
     }
   );
@@ -414,7 +478,7 @@ async function testAdminFlow() {
 
   console.log("Teacher review flow validated");
 
-  console.log("9. Validate general student feedback profile");
+  console.log("10. Validate general student feedback profile");
   const generalComment = "Excellent progress in speaking this week. Keep practicing listening.";
   const { data: savedFeedbackProfile } = await request(
     `/students/${tempStudentId}/feedback-profile`,
@@ -451,7 +515,7 @@ async function testAdminFlow() {
 
   console.log("General student feedback profile validated");
 
-  console.log("10. Patch activity");
+  console.log("11. Patch activity");
   const { data: updatedActivity } = await request(`/activities/${createdActivity.id}`, {
     method: "PATCH",
     headers: authHeaders,
@@ -469,7 +533,7 @@ async function testAdminFlow() {
 
   console.log("Activity updated");
 
-  console.log("11. Delete activity");
+  console.log("12. Delete activity");
   await request(`/activities/${createdActivity.id}`, {
     method: "DELETE",
     headers: authHeaders,

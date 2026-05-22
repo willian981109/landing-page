@@ -26,26 +26,6 @@ const studentData = {
       description: "Foco atual: fluência, escuta e segurança ao responder.",
     },
   ],
-  materials: [
-    {
-      type: "PDF",
-      title: "Guia de rotina de estudos",
-      description: "Um roteiro simples para organizar sua prática semanal de inglês.",
-      url: "#",
-    },
-    {
-      type: "Vídeo",
-      title: "Como responder perguntas no passado",
-      description: "Aula curta para revisar estrutura, pronúncia e exemplos do Past Simple.",
-      url: "https://www.youtube.com/results?search_query=past+simple+english+lesson",
-    },
-    {
-      type: "Link",
-      title: "Cambridge Dictionary",
-      description: "Dicionário com pronúncia, exemplos e definições confiáveis.",
-      url: "https://dictionary.cambridge.org/",
-    },
-  ],
   schedule: {
     monthLabel: "Maio 2026",
     year: 2026,
@@ -100,7 +80,7 @@ const studentData = {
 
 const navItems = document.querySelectorAll("[data-view-target]");
 const views = document.querySelectorAll("[data-view]");
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = "";
 const STUDENT_TOKEN_KEY = "englishStudioStudentToken";
 const STUDENT_USER_KEY = "englishStudioStudentUser";
 const studentName = document.querySelector("[data-student-name]");
@@ -123,6 +103,11 @@ const activityState = {
   expandedId: null,
   feedback: "",
 };
+const materialState = {
+  items: [],
+  isLoading: false,
+  message: "",
+};
 const feedbackProfileState = {
   profile: null,
   isLoading: false,
@@ -136,19 +121,15 @@ const skillRatings = [
 ];
 
 function getStudentToken() {
-  return localStorage.getItem(STUDENT_TOKEN_KEY);
+  return window.EnglishStudioAuth?.getSession("student")?.token || "";
 }
 
 function clearStudentSession() {
-  window.EnglishStudioAuth?.clearSession();
+  window.EnglishStudioAuth?.clearStudentSession();
 }
 
 function getStoredStudent() {
-  try {
-    return JSON.parse(localStorage.getItem(STUDENT_USER_KEY));
-  } catch (error) {
-    return null;
-  }
+  return window.EnglishStudioAuth?.getSession("student")?.user || null;
 }
 
 function getTokenPayload(token) {
@@ -167,21 +148,22 @@ function isStudentTokenValid(token) {
 }
 
 function requireStudentSession() {
-  const token = getStudentToken();
-  const user = getStoredStudent();
+  const session = window.EnglishStudioAuth?.getSession("student");
+  const user = session?.user;
 
-  if (token && user?.role === "student" && isStudentTokenValid(token)) {
+  if (session?.token && user?.role === "student") {
     studentName.textContent = user.name;
     homeTitle.textContent = `Bem-vinda/o de volta, ${user.name}.`;
     return true;
   }
 
-  window.EnglishStudioAuth?.logout();
+  redirectToLogin();
   return false;
 }
 
 function redirectToLogin() {
-  window.EnglishStudioAuth?.logout();
+  window.EnglishStudioAuth?.clearStudentSession();
+  window.EnglishStudioAuth?.redirectHome();
 }
 
 function escapeHtml(value) {
@@ -209,9 +191,13 @@ async function fetchStudentApi(path, options = {}) {
     },
   });
 
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401) {
     redirectToLogin();
     return null;
+  }
+
+  if (response.status === 403) {
+    throw new Error("Sua conta nao tem permissao para acessar este recurso.");
   }
 
   const data = await response.json().catch(() => ({}));
@@ -236,11 +222,14 @@ function getActivityStatusLabel(status) {
 
 function getMaterialLabel(type) {
   const labels = {
+    document: "Documento",
     docs: "Google Docs",
+    exercise: "Exercício",
     pdf: "PDF",
     audio: "Áudio",
     video: "Vídeo",
     link: "Link externo",
+    vocabulary: "Vocabulário",
   };
 
   return labels[type] || "Material";
@@ -248,11 +237,14 @@ function getMaterialLabel(type) {
 
 function getMaterialIcon(type) {
   const icons = {
+    document: "DOC",
     docs: "DOC",
+    exercise: "EX",
     pdf: "PDF",
     audio: "AUD",
     video: "VID",
     link: "URL",
+    vocabulary: "VOC",
   };
 
   return icons[type] || "MAT";
@@ -318,18 +310,68 @@ function renderHome() {
 function renderMaterials() {
   const container = document.querySelector("[data-materials-list]");
 
-  container.innerHTML = studentData.materials
+  if (materialState.isLoading) {
+    container.innerHTML = `
+      <article class="material-card">
+        <span class="type-chip">Carregando</span>
+        <h3>Buscando materiais</h3>
+        <p>Aguarde enquanto carregamos os conteúdos enviados pela professora.</p>
+      </article>
+    `;
+    return;
+  }
+
+  if (materialState.message) {
+    container.innerHTML = `
+      <article class="material-card">
+        <span class="type-chip">Erro</span>
+        <h3>Materiais indisponíveis</h3>
+        <p>${escapeHtml(materialState.message)}</p>
+      </article>
+    `;
+    return;
+  }
+
+  if (!materialState.items.length) {
+    container.innerHTML = `
+      <article class="material-card">
+        <span class="type-chip">Sem materiais</span>
+        <h3>Nenhum material enviado</h3>
+        <p>Quando a professora compartilhar um conteúdo de estudo, ele aparecerá aqui.</p>
+      </article>
+    `;
+    return;
+  }
+
+  container.innerHTML = materialState.items
     .map(
       (material) => `
         <article class="material-card">
-          <span class="type-chip">${material.type}</span>
-          <h3>${material.title}</h3>
-          <p>${material.description}</p>
-          <a href="${material.url}" target="_blank" rel="noreferrer">Abrir material</a>
+          <span class="type-chip">${getMaterialLabel(material.type)}</span>
+          <h3>${escapeHtml(material.title)}</h3>
+          <p>${escapeHtml(material.description || "Material de apoio enviado pela professora.")}</p>
+          <a href="${escapeHtml(material.url)}" target="_blank" rel="noreferrer">Abrir material</a>
         </article>
       `
     )
     .join("");
+}
+
+async function loadMaterials() {
+  materialState.isLoading = true;
+  materialState.message = "";
+  renderMaterials();
+
+  try {
+    materialState.items = await fetchStudentApi("/my-materials");
+  } catch (error) {
+    console.error("Erro ao carregar materiais:", error);
+    materialState.items = [];
+    materialState.message = error.message;
+  } finally {
+    materialState.isLoading = false;
+    renderMaterials();
+  }
 }
 
 function formatActivityDate(value) {
@@ -438,18 +480,8 @@ function renderTeacherReview(activity) {
         </article>
       </div>
       ${
-        activity.teacher_summary
-          ? `<article><strong>Resumo</strong><p>${escapeHtml(activity.teacher_summary)}</p></article>`
-          : ""
-      }
-      ${
         activity.teacher_feedback
           ? `<article><strong>Feedback / correção</strong><p>${escapeHtml(activity.teacher_feedback)}</p></article>`
-          : ""
-      }
-      ${
-        activity.teacher_observations
-          ? `<article><strong>Observações</strong><p>${escapeHtml(activity.teacher_observations)}</p></article>`
           : ""
       }
     </div>
@@ -1338,13 +1370,13 @@ function setupNavigation() {
 }
 
 logoutButton.addEventListener("click", () => {
-  window.EnglishStudioAuth?.logout();
+  window.EnglishStudioAuth?.logout("student");
 });
 
 if (requireStudentSession()) {
   renderNotifications();
   renderHome();
-  renderMaterials();
+  loadMaterials();
   loadActivities();
   loadFeedbackProfile();
   loadSchedule();

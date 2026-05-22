@@ -11,7 +11,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="teacher-create-activity.css" />
+    <link rel="stylesheet" href="css/teacher-create-activity.css" />
   </head>
   <body>
     <header class="teacher-header">
@@ -39,7 +39,7 @@
         <form class="admin-login-form auth-panel active" data-login-form>
           <label class="field">
             <span>Email</span>
-            <input type="email" name="email" autocomplete="email" required />
+            <input type="email" name="email" autocomplete="email" data-login-email required />
           </label>
 
           <label class="field">
@@ -58,13 +58,27 @@
 
           <label class="field">
             <span>Email</span>
-            <input type="email" name="email" autocomplete="email" required />
+            <input type="email" name="email" autocomplete="email" data-register-email required />
           </label>
 
           <label class="field">
             <span>Senha</span>
-            <input type="password" name="password" autocomplete="new-password" minlength="6" required />
+            <input type="password" name="password" autocomplete="new-password" minlength="8" data-register-password required />
           </label>
+
+          <div class="password-strength" data-password-strength>
+            <div class="password-strength__bar" aria-hidden="true">
+              <span data-password-strength-bar></span>
+            </div>
+            <p data-password-strength-label>Use uma senha segura.</p>
+            <ul>
+              <li data-password-rule="length">8 caracteres ou mais</li>
+              <li data-password-rule="upper">1 letra maiuscula</li>
+              <li data-password-rule="lower">1 letra minuscula</li>
+              <li data-password-rule="number">1 numero</li>
+              <li data-password-rule="special">1 caractere especial</li>
+            </ul>
+          </div>
 
           <button class="publish-button" type="submit">Criar conta</button>
         </form>
@@ -73,7 +87,7 @@
       </section>
     </main>
 
-    <script src="auth-session.js" defer></script>
-    <script src="login.js" defer></script>
+    <script src="js/auth-session.js" defer></script>
+    <script src="js/login.js" defer></script>
   </body>
 </html>

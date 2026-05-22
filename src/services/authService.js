@@ -2,8 +2,12 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 const { pool } = require("../database/pool");
+const {
+  normalizeLoginPayload,
+  normalizeRegisterPayload,
+} = require("../utils/securityValidation");
 
-const SALT_ROUNDS = 10;
+const SALT_ROUNDS = Number(process.env.BCRYPT_SALT_ROUNDS) || 12;
 
 function createAuthError(message, statusCode = 400) {
   const error = new Error(message);
@@ -22,6 +26,10 @@ function sanitizeUser(user) {
 }
 
 function createToken(user) {
+  if (!process.env.JWT_SECRET) {
+    throw createAuthError("JWT secret is not configured", 500);
+  }
+
   return jwt.sign(
     {
       sub: user.id,
@@ -29,29 +37,14 @@ function createToken(user) {
     },
     process.env.JWT_SECRET,
     {
-      expiresIn: process.env.JWT_EXPIRES_IN || "1d",
+      expiresIn: process.env.JWT_EXPIRES_IN || "8h",
+      issuer: process.env.JWT_ISSUER || "english-studio",
     }
   );
 }
 
-function validateRegisterInput({ name, email, password }) {
-  if (!name || !email || !password) {
-    throw createAuthError("Name, email and password are required");
-  }
-
-  if (password.length < 6) {
-    throw createAuthError("Password must have at least 6 characters");
-  }
-}
-
-function validateLoginInput({ email, password }) {
-  if (!email || !password) {
-    throw createAuthError("Email and password are required");
-  }
-}
-
-async function registerUser({ name, email, password }) {
-  validateRegisterInput({ name, email, password });
+async function registerUser(payload) {
+  const { name, email, password } = normalizeRegisterPayload(payload);
 
   const existingUser = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
 
@@ -78,8 +71,8 @@ async function registerUser({ name, email, password }) {
   };
 }
 
-async function loginUser({ email, password }) {
-  validateLoginInput({ email, password });
+async function loginUser(payload) {
+  const { email, password } = normalizeLoginPayload(payload);
 
   const result = await pool.query(
     "SELECT id, name, email, password_hash, role, created_at FROM users WHERE email = $1",

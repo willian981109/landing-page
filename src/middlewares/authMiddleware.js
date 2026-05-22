@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const { pool } = require("../database/pool");
 
 function createAuthError(message, statusCode = 401) {
   const error = new Error(message);
@@ -6,7 +7,23 @@ function createAuthError(message, statusCode = 401) {
   return error;
 }
 
-function authMiddleware(req, res, next) {
+function verifyToken(token) {
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET, {
+      issuer: process.env.JWT_ISSUER || "english-studio",
+    });
+  } catch (error) {
+    const previousSecret = process.env.JWT_PREVIOUS_SECRET;
+
+    if (!previousSecret) {
+      throw error;
+    }
+
+    return jwt.verify(token, previousSecret);
+  }
+}
+
+async function authMiddleware(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
 
@@ -20,7 +37,15 @@ function authMiddleware(req, res, next) {
       throw createAuthError("Bearer token is required");
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = verifyToken(token);
+    const userResult = await pool.query(
+      "SELECT id, role FROM users WHERE id = $1 AND role = $2",
+      [decoded.sub, decoded.role]
+    );
+
+    if (userResult.rowCount === 0) {
+      throw createAuthError("Invalid or expired token");
+    }
 
     req.user = {
       id: decoded.sub,

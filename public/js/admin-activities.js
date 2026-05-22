@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = "";
 const ADMIN_TOKEN_KEY = "englishStudioAdminToken";
 const ADMIN_USER_KEY = "englishStudioAdminUser";
 const SELECTED_STUDENT_KEY = "englishStudioSelectedStudentId";
@@ -42,6 +42,7 @@ const skillRatings = [
 const feedbackProfileState = {
   profile: null,
   isLoading: false,
+  isExpanded: false,
   message: "",
 };
 
@@ -50,19 +51,15 @@ function isUuid(value) {
 }
 
 function getAdminToken() {
-  return localStorage.getItem(ADMIN_TOKEN_KEY);
+  return window.EnglishStudioAuth?.getSession("teacher")?.token || "";
 }
 
 function clearAdminSession() {
-  window.EnglishStudioAuth?.clearSession();
+  window.EnglishStudioAuth?.clearTeacherSession();
 }
 
 function getAdminUser() {
-  try {
-    return JSON.parse(localStorage.getItem(ADMIN_USER_KEY));
-  } catch (error) {
-    return null;
-  }
+  return window.EnglishStudioAuth?.getSession("teacher")?.user || null;
 }
 
 function getTokenPayload(token) {
@@ -81,20 +78,21 @@ function isTeacherTokenValid(token) {
 }
 
 function requireTeacherSession() {
-  const token = getAdminToken();
-  const user = getAdminUser();
+  const session = window.EnglishStudioAuth?.getSession("teacher");
+  const user = session?.user;
 
-  if (token && user?.role === "teacher" && isTeacherTokenValid(token)) {
+  if (session?.token && user?.role === "teacher") {
     adminGreeting.textContent = `Conectada como ${user.name}. Acompanhe entregas e registre feedbacks dos alunos.`;
     return true;
   }
 
-  window.EnglishStudioAuth?.logout();
+  redirectToLogin();
   return false;
 }
 
 function redirectToLogin() {
-  window.EnglishStudioAuth?.logout();
+  window.EnglishStudioAuth?.clearTeacherSession();
+  window.EnglishStudioAuth?.redirectHome();
 }
 
 function escapeHtml(value) {
@@ -123,9 +121,13 @@ async function fetchAdminApi(path, options = {}) {
     },
   });
 
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401) {
     redirectToLogin();
     return null;
+  }
+
+  if (response.status === 403) {
+    throw new Error("Sua conta nao tem permissao para acessar este recurso.");
   }
 
   const data = await response.json().catch(() => ({}));
@@ -306,10 +308,33 @@ function renderRatingButtons(field, currentValue, label) {
         data-rating-value="${value}"
         aria-label="${escapeHtml(label)} ${value} de 5 estrelas"
       >
-        ${isActive ? "★" : "☆"}
+        ${isActive ? "&#9733;" : "&#9734;"}
       </button>
     `;
   }).join("");
+}
+
+function formatFeedbackUpdateLabel(updatedAt) {
+  if (!updatedAt) {
+    return "&Uacute;ltima atualiza&ccedil;&atilde;o: ainda n&atilde;o salvo";
+  }
+
+  const date = new Date(updatedAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return "&Uacute;ltima atualiza&ccedil;&atilde;o: registrada";
+  }
+
+  const monthYear = date.toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
+
+  return `&Uacute;ltima atualiza&ccedil;&atilde;o: ${monthYear.charAt(0).toUpperCase()}${monthYear.slice(1)}`;
+}
+
+function getProfileToggleLabel() {
+  return feedbackProfileState.isExpanded ? "Recolher feedback" : "Expandir feedback";
 }
 
 function renderPedagogicalProfile() {
@@ -321,68 +346,90 @@ function renderPedagogicalProfile() {
 
   if (!activityState.selectedStudentId) {
     pedagogicalProfilePanel.innerHTML = `
-      <span class="panel-label">Perfil pedagÃ³gico do aluno</span>
-      <h2>Feedback geral</h2>
-      <p>Selecione um aluno para editar estrelas, evoluÃ§Ã£o semanal e observaÃ§Ãµes gerais.</p>
-    `;
-    return;
-  }
-
-  if (feedbackProfileState.isLoading) {
-    pedagogicalProfilePanel.innerHTML = `
-      <span class="panel-label">Perfil pedagÃ³gico do aluno</span>
-      <h2>Carregando feedback geral</h2>
-      <p>Buscando o perfil pedagÃ³gico de ${escapeHtml(selectedStudent?.name || "este aluno")}.</p>
+      <div class="pedagogical-profile-summary">
+        <div>
+          <span class="panel-label">Perfil pedag&oacute;gico do aluno</span>
+          <h2>Feedback geral do aluno</h2>
+          <p>Selecione um aluno para editar o acompanhamento geral.</p>
+        </div>
+      </div>
     `;
     return;
   }
 
   const profile = normalizeFeedbackProfile(feedbackProfileState.profile);
+  const isExpanded = feedbackProfileState.isExpanded;
 
   pedagogicalProfilePanel.innerHTML = `
-    <form class="pedagogical-profile-form" data-pedagogical-profile-form>
-      <div class="pedagogical-profile-heading">
+    <form class="pedagogical-profile-form ${isExpanded ? "is-expanded" : ""}" data-pedagogical-profile-form>
+      <div class="pedagogical-profile-summary">
         <div>
-          <span class="panel-label">Perfil pedagÃ³gico do aluno</span>
-          <h2>Feedback geral de ${escapeHtml(selectedStudent?.name || "aluno")}</h2>
-          <p>EvoluÃ§Ã£o semanal, habilidades e comentÃ¡rios gerais separados das atividades especÃ­ficas.</p>
+          <span class="panel-label">Perfil pedag&oacute;gico do aluno</span>
+          <h2>Feedback geral do aluno</h2>
+          <p>${formatFeedbackUpdateLabel(profile.updated_at)}</p>
         </div>
-        ${
-          profile.updated_at
-            ? `<small>Atualizado em ${formatDate(profile.updated_at)}</small>`
-            : "<small>Ainda nÃ£o salvo</small>"
-        }
+        <button class="profile-toggle-button" type="button" data-toggle-pedagogical-profile aria-expanded="${isExpanded}">
+          <span>${getProfileToggleLabel()}</span>
+          <span class="profile-toggle-button__icon" aria-hidden="true">&#8964;</span>
+        </button>
       </div>
 
-      <div class="profile-rating-grid" aria-label="Habilidades do aluno">
-        ${skillRatings
-          .map(
-            (skill) => `
-              <div class="profile-rating-row">
-                <span>${skill.label}</span>
-                <div class="profile-stars">
-                  ${renderRatingButtons(skill.key, profile[skill.key], skill.label)}
+      <div class="profile-collapsible" data-profile-collapsible>
+        <div class="pedagogical-profile-heading">
+          <div>
+            <span class="panel-label">Acompanhamento mensal</span>
+            <h3>${escapeHtml(selectedStudent?.name || "Aluno")}</h3>
+            <p>Evolu&ccedil;&atilde;o semanal, habilidades e coment&aacute;rios gerais separados das atividades espec&iacute;ficas.</p>
+          </div>
+          ${
+            feedbackProfileState.isLoading
+              ? "<small>Carregando perfil...</small>"
+              : profile.updated_at
+                ? `<small>Atualizado em ${formatDate(profile.updated_at)}</small>`
+                : "<small>Ainda n&atilde;o salvo</small>"
+          }
+        </div>
+
+        <div class="profile-rating-grid" aria-label="Habilidades do aluno">
+          ${skillRatings
+            .map(
+              (skill) => `
+                <div class="profile-rating-row">
+                  <span>${skill.label}</span>
+                  <div class="profile-stars">
+                    ${renderRatingButtons(skill.key, profile[skill.key], skill.label)}
+                  </div>
                 </div>
-              </div>
-            `
-          )
-          .join("")}
+              `
+            )
+            .join("")}
+        </div>
+
+        <label class="field profile-comment-field">
+          <span>Coment&aacute;rio geral da professora</span>
+          <textarea
+            name="teacher_comment"
+            data-profile-comment
+            rows="5"
+            placeholder="Ex: Aluno evoluiu bastante em conversa&ccedil;&atilde;o esta semana. Demonstrou dificuldade em interpreta&ccedil;&atilde;o de textos longos."
+          >${escapeHtml(profile.teacher_comment)}</textarea>
+        </label>
+
+        ${feedbackProfileState.message ? `<p class="dashboard-message">${escapeHtml(feedbackProfileState.message)}</p>` : ""}
+        <button class="publish-button" type="submit" ${feedbackProfileState.isLoading ? "disabled" : ""}>
+          Salvar feedback geral
+        </button>
       </div>
-
-      <label class="field profile-comment-field">
-        <span>ComentÃ¡rio geral da professora</span>
-        <textarea
-          name="teacher_comment"
-          data-profile-comment
-          rows="5"
-          placeholder="Ex: Aluno evoluiu bastante em conversaÃ§Ã£o esta semana. Demonstrou dificuldade em interpretaÃ§Ã£o de textos longos."
-        >${escapeHtml(profile.teacher_comment)}</textarea>
-      </label>
-
-      ${feedbackProfileState.message ? `<p class="dashboard-message">${escapeHtml(feedbackProfileState.message)}</p>` : ""}
-      <button class="publish-button" type="submit">Salvar feedback geral</button>
     </form>
   `;
+
+  pedagogicalProfilePanel.querySelector("[data-toggle-pedagogical-profile]")?.addEventListener("click", () => {
+    const comment = pedagogicalProfilePanel.querySelector("[data-profile-comment]")?.value || "";
+    feedbackProfileState.profile = normalizeFeedbackProfile(feedbackProfileState.profile);
+    feedbackProfileState.profile.teacher_comment = comment;
+    feedbackProfileState.isExpanded = !feedbackProfileState.isExpanded;
+    renderPedagogicalProfile();
+  });
 
   pedagogicalProfilePanel.querySelectorAll("[data-profile-rating]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -531,13 +578,6 @@ function renderDetail(assignment) {
       <section class="correction-box">
         <span class="panel-label">Correção</span>
         <label class="field">
-          <span>Resumo da professora</span>
-          <textarea name="teacher_summary" rows="4" placeholder="Resumo pedagógico da entrega">${escapeHtml(
-            assignment.teacher_summary
-          )}</textarea>
-        </label>
-
-        <label class="field">
           <span>Feedback / correção</span>
           <textarea name="teacher_feedback" rows="6" placeholder="Correções, pontos fortes e próximos passos">${escapeHtml(
             assignment.teacher_feedback
@@ -554,13 +594,6 @@ function renderDetail(assignment) {
             value="${assignment.teacher_grade ?? ""}"
             placeholder="Ex: 85"
           />
-        </label>
-
-        <label class="field">
-          <span>Observações</span>
-          <textarea name="teacher_observations" rows="3" placeholder="Observações internas ou combinados">${escapeHtml(
-            assignment.teacher_observations
-          )}</textarea>
         </label>
 
         <button class="publish-button" type="submit">Salvar correção e marcar como corrigida</button>
@@ -633,10 +666,8 @@ async function saveReview(event) {
 
   const formData = new FormData(event.currentTarget);
   const payload = {
-    teacher_summary: formData.get("teacher_summary"),
     teacher_feedback: formData.get("teacher_feedback"),
     teacher_grade: formData.get("teacher_grade"),
-    teacher_observations: formData.get("teacher_observations"),
   };
 
   try {
@@ -856,7 +887,7 @@ studentFilter.addEventListener("change", async () => {
 });
 
 adminLogoutButton.addEventListener("click", () => {
-  window.EnglishStudioAuth?.logout();
+  window.EnglishStudioAuth?.logout("teacher");
 });
 
 if (requireTeacherSession()) {

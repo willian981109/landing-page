@@ -191,11 +191,7 @@ function normalizeReviewPayload(payload) {
 
   return {
     teacher_feedback: String(payload.teacher_feedback ?? payload.teacherFeedback ?? "").trim() || null,
-    teacher_summary: String(payload.teacher_summary ?? payload.teacherSummary ?? "").trim() || null,
     teacher_grade: normalizedGrade,
-    teacher_observations:
-      String(payload.teacher_observations ?? payload.teacherObservations ?? payload.observations ?? "").trim() ||
-      null,
   };
 }
 
