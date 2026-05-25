@@ -1,83 +1,3 @@
-const studentData = {
-  notifications: [
-    {
-      type: "Atividade pendente",
-      message: "Enviar a atividade de listening até 14/05/2026.",
-    },
-    {
-      type: "Novo feedback",
-      message: "A Teacher Samilly adicionou comentários sobre sua última aula.",
-    },
-  ],
-  home: [
-    {
-      label: "Próxima aula",
-      title: "Conversação guiada",
-      description: "14/05/2026 às 19:00",
-    },
-    {
-      label: "Atividade pendente",
-      title: "Listening: daily routine",
-      description: "Prazo em 14/05/2026",
-    },
-    {
-      label: "Nível atual",
-      title: "A2 em evolução",
-      description: "Foco atual: fluência, escuta e segurança ao responder.",
-    },
-  ],
-  schedule: {
-    monthLabel: "Maio 2026",
-    year: 2026,
-    monthIndex: 4,
-    selectedDay: 14,
-    days: {
-      14: [
-        {
-          time: "19:00",
-          title: "Conversação guiada",
-          status: "Aula marcada",
-          meet: "https://meet.google.com/abc-defg-hij",
-          materials: ["PDF: perguntas para conversação", "Vídeo: Past Simple review"],
-        },
-      ],
-      16: [
-        {
-          time: "18:00",
-          title: "Horário disponível",
-          status: "Disponível",
-        },
-        {
-          time: "20:00",
-          title: "Horário disponível",
-          status: "Disponível",
-        },
-      ],
-      18: [
-        {
-          time: "18:00",
-          title: "Horário disponível",
-          status: "Disponível",
-        },
-        {
-          time: "20:00",
-          title: "Horário disponível",
-          status: "Disponível",
-        },
-      ],
-    },
-  },
-  profile: [
-    ["Nome", "Joyce Almeida"],
-    ["Email", "joyce@email.com"],
-    ["Plano", "Plano personalizado + aula semanal"],
-    ["Aulas feitas", "8 aulas"],
-    ["Valores", "R$ 320,00 / mês"],
-    ["Horário fixo", "Quintas-feiras às 19:00"],
-    ["Nível do aluno", "A2 - Elementary"],
-  ],
-};
-
 const navItems = document.querySelectorAll("[data-view-target]");
 const views = document.querySelectorAll("[data-view]");
 const API_BASE_URL = "";
@@ -102,6 +22,7 @@ const activityState = {
   items: [],
   expandedId: null,
   feedback: "",
+  isLoading: false,
 };
 const materialState = {
   items: [],
@@ -191,16 +112,19 @@ async function fetchStudentApi(path, options = {}) {
     },
   });
 
+  const data = await response.json().catch(() => ({}));
+
   if (response.status === 401) {
-    redirectToLogin();
-    return null;
+    if (window.EnglishStudioAuth?.handleUnauthorized("student", data)) {
+      return null;
+    }
+
+    throw new Error(data.error || "Nao foi possivel validar sua sessao. Tente novamente.");
   }
 
   if (response.status === 403) {
     throw new Error("Sua conta nao tem permissao para acessar este recurso.");
   }
-
-  const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
     throw new Error(data.error || "Não foi possível concluir a ação.");
@@ -276,15 +200,115 @@ function getStatusClass(status) {
     .replace(/\s+/g, "-");
 }
 
+function getUpcomingSchedules() {
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+    now.getDate()
+  ).padStart(2, "0")}`;
+
+  return scheduleState.schedules
+    .filter((schedule) => !["canceled", "completed"].includes(schedule.status))
+    .filter((schedule) => getScheduleDateKey(schedule.class_date) >= todayKey)
+    .sort((first, second) => {
+      const firstKey = `${getScheduleDateKey(first.class_date)} ${formatScheduleTime(first.class_time)}`;
+      const secondKey = `${getScheduleDateKey(second.class_date)} ${formatScheduleTime(second.class_time)}`;
+      return firstKey.localeCompare(secondKey);
+    });
+}
+
+function getPendingActivities() {
+  return activityState.items.filter((activity) => ["pending", "in_progress"].includes(activity.status));
+}
+
+function getReviewedActivities() {
+  return activityState.items.filter((activity) => activity.status === "reviewed");
+}
+
+function buildNotificationItems() {
+  if (activityState.isLoading || scheduleState.isLoading || feedbackProfileState.isLoading) {
+    return [
+      {
+        type: "Carregando",
+        message: "Atualizando seu acompanhamento com os dados mais recentes.",
+      },
+    ];
+  }
+
+  const nextSchedule = getUpcomingSchedules()[0];
+  const pendingActivities = getPendingActivities();
+  const reviewedActivities = getReviewedActivities();
+  const notifications = [];
+
+  if (nextSchedule) {
+    notifications.push({
+      type: "Próxima aula",
+      message: `${formatScheduleDate(nextSchedule.class_date)} às ${formatScheduleTime(nextSchedule.class_time)}.`,
+    });
+  }
+
+  if (pendingActivities.length) {
+    notifications.push({
+      type: "Atividade pendente",
+      message: `${pendingActivities.length} atividade(s) aguardando andamento ou conclusão.`,
+    });
+  }
+
+  if (reviewedActivities.length) {
+    notifications.push({
+      type: "Correção disponível",
+      message: "Você tem feedback da professora em atividades corrigidas.",
+    });
+  }
+
+  if (!notifications.length) {
+    notifications.push({
+      type: "Tudo em dia",
+      message: "Nenhuma pendência encontrada no momento.",
+    });
+  }
+
+  return notifications;
+}
+
+function buildHomeCards() {
+  const nextSchedule = getUpcomingSchedules()[0];
+  const pendingActivities = getPendingActivities();
+  const materialCount = materialState.items.length;
+
+  return [
+    {
+      label: "Próxima aula",
+      title: nextSchedule ? "Aula marcada" : "Sem aula futura",
+      description: nextSchedule
+        ? `${formatScheduleDate(nextSchedule.class_date)} às ${formatScheduleTime(nextSchedule.class_time)}`
+        : "Quando uma aula for marcada, ela aparecerá aqui.",
+    },
+    {
+      label: "Atividades",
+      title: activityState.isLoading ? "Carregando" : `${pendingActivities.length} pendente(s)`,
+      description: pendingActivities.length
+        ? "Abra Atividades / lições para continuar seu acompanhamento."
+        : "Nenhuma atividade pendente no momento.",
+    },
+    {
+      label: "Materiais",
+      title: materialState.isLoading ? "Carregando" : `${materialCount} disponível(is)`,
+      description: materialCount
+        ? "Conteúdos de estudo enviados pela professora estão disponíveis."
+        : "Novos materiais aparecerão quando forem enviados.",
+    },
+  ];
+}
+
 function renderNotifications() {
   const container = document.querySelector("[data-notifications]");
 
-  container.innerHTML = studentData.notifications
+  container.innerHTML = buildNotificationItems()
     .map(
       (notification) => `
         <article class="notification-card">
-          <span>${notification.type}</span>
-          <p>${notification.message}</p>
+          <span>${escapeHtml(notification.type)}</span>
+          <p>${escapeHtml(notification.message)}</p>
         </article>
       `
     )
@@ -294,13 +318,13 @@ function renderNotifications() {
 function renderHome() {
   const container = document.querySelector("[data-home-cards]");
 
-  container.innerHTML = studentData.home
+  container.innerHTML = buildHomeCards()
     .map(
       (card) => `
         <article class="summary-card">
-          <span class="summary-card__label">${card.label}</span>
-          <h3>${card.title}</h3>
-          <p>${card.description}</p>
+          <span class="summary-card__label">${escapeHtml(card.label)}</span>
+          <h3>${escapeHtml(card.title)}</h3>
+          <p>${escapeHtml(card.description)}</p>
         </article>
       `
     )
@@ -371,6 +395,8 @@ async function loadMaterials() {
   } finally {
     materialState.isLoading = false;
     renderMaterials();
+    renderHome();
+    renderNotifications();
   }
 }
 
@@ -591,6 +617,9 @@ function renderTasks() {
 
 async function loadActivities() {
   const container = document.querySelector("[data-tasks-list]");
+  activityState.isLoading = true;
+  renderHome();
+  renderNotifications();
 
   container.innerHTML = `
     <article class="activity-card">
@@ -616,6 +645,10 @@ async function loadActivities() {
         </div>
       </article>
     `;
+  } finally {
+    activityState.isLoading = false;
+    renderHome();
+    renderNotifications();
   }
 }
 
@@ -761,6 +794,7 @@ async function loadFeedbackProfile() {
   } finally {
     feedbackProfileState.isLoading = false;
     renderFeedback();
+    renderNotifications();
   }
 }
 
@@ -1293,6 +1327,8 @@ async function loadSchedule() {
   } finally {
     scheduleState.isLoading = false;
     renderSchedule();
+    renderHome();
+    renderNotifications();
   }
 }
 
@@ -1347,7 +1383,15 @@ function renderProfile() {
         ["Horário fixo", "A combinar"],
         ["Nível do aluno", "Em avaliação"],
       ]
-    : studentData.profile;
+    : [
+        ["Nome", "Aluno"],
+        ["Email", "Em configuração"],
+        ["Plano", "Em configuração"],
+        ["Aulas feitas", "Em acompanhamento"],
+        ["Valores", "Sob consulta"],
+        ["Horário fixo", "A combinar"],
+        ["Nível do aluno", "Em avaliação"],
+      ];
 
   container.innerHTML = profileItems
     .map(

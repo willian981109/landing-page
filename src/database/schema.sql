@@ -30,10 +30,17 @@ CREATE TABLE IF NOT EXISTS activities (
   title VARCHAR(180) NOT NULL,
   description TEXT NOT NULL,
   deadline DATE NOT NULL,
-  points INTEGER NOT NULL,
+  points INTEGER NOT NULL CHECK (points >= 0),
   teacher_id UUID NOT NULL REFERENCES users(id),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE activities
+  DROP CONSTRAINT IF EXISTS activities_points_check;
+
+ALTER TABLE activities
+  ADD CONSTRAINT activities_points_check
+  CHECK (points >= 0);
 
 CREATE TABLE IF NOT EXISTS activity_students (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -43,7 +50,7 @@ CREATE TABLE IF NOT EXISTS activity_students (
   assigned_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   completed_at TIMESTAMP WITH TIME ZONE,
   teacher_feedback TEXT,
-  teacher_grade INTEGER,
+  teacher_grade INTEGER CHECK (teacher_grade IS NULL OR teacher_grade BETWEEN 0 AND 100),
   reviewed_at TIMESTAMP WITH TIME ZONE,
   UNIQUE (activity_id, student_id)
 );
@@ -66,14 +73,35 @@ BEGIN
   END IF;
 END $$;
 
+ALTER TABLE activity_students
+  DROP CONSTRAINT IF EXISTS activity_students_teacher_grade_check;
+
+ALTER TABLE activity_students
+  ADD CONSTRAINT activity_students_teacher_grade_check
+  CHECK (teacher_grade IS NULL OR teacher_grade BETWEEN 0 AND 100);
+
 CREATE TABLE IF NOT EXISTS activity_materials (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   activity_id UUID NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
-  type VARCHAR(30) NOT NULL,
+  type VARCHAR(30) NOT NULL CHECK (type IN ('link', 'pdf', 'audio', 'docs', 'video')),
   title VARCHAR(180) NOT NULL,
-  url TEXT NOT NULL,
+  url TEXT NOT NULL CHECK (url ~* '^https?://'),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE activity_materials
+  DROP CONSTRAINT IF EXISTS activity_materials_type_check;
+
+ALTER TABLE activity_materials
+  DROP CONSTRAINT IF EXISTS activity_materials_url_http_check;
+
+ALTER TABLE activity_materials
+  ADD CONSTRAINT activity_materials_type_check
+  CHECK (type IN ('link', 'pdf', 'audio', 'docs', 'video'));
+
+ALTER TABLE activity_materials
+  ADD CONSTRAINT activity_materials_url_http_check
+  CHECK (url ~* '^https?://');
 
 CREATE TABLE IF NOT EXISTS student_feedback_profiles (
   student_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -96,11 +124,18 @@ CREATE TABLE IF NOT EXISTS study_materials (
   title VARCHAR(180) NOT NULL,
   description TEXT,
   type VARCHAR(30) NOT NULL,
-  url TEXT NOT NULL,
+  url TEXT NOT NULL CHECK (url ~* '^https?://'),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   CHECK (type IN ('pdf', 'video', 'link', 'exercise', 'audio', 'document', 'vocabulary'))
 );
+
+ALTER TABLE study_materials
+  DROP CONSTRAINT IF EXISTS study_materials_url_http_check;
+
+ALTER TABLE study_materials
+  ADD CONSTRAINT study_materials_url_http_check
+  CHECK (url ~* '^https?://');
 
 CREATE INDEX IF NOT EXISTS study_materials_student_idx
   ON study_materials (student_id, created_at DESC);
@@ -114,12 +149,19 @@ CREATE TABLE IF NOT EXISTS class_schedules (
   teacher_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   class_date DATE NOT NULL,
   class_time TIME NOT NULL,
-  meet_link TEXT,
+  meet_link TEXT CHECK (meet_link IS NULL OR meet_link ~* '^https?://'),
   notes TEXT,
   status VARCHAR(30) NOT NULL DEFAULT 'scheduled',
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   CHECK (status IN ('scheduled', 'pending_change', 'confirmed', 'canceled', 'completed'))
 );
+
+ALTER TABLE class_schedules
+  DROP CONSTRAINT IF EXISTS class_schedules_meet_link_http_check;
+
+ALTER TABLE class_schedules
+  ADD CONSTRAINT class_schedules_meet_link_http_check
+  CHECK (meet_link IS NULL OR meet_link ~* '^https?://');
 
 ALTER TABLE class_schedules
   DROP CONSTRAINT IF EXISTS class_schedules_status_check;

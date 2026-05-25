@@ -1584,6 +1584,12 @@ html {
   transform: scale(1.04);
 }
 
+.hero__art picture {
+  display: block;
+  position: relative;
+  width: 100%;
+}
+
 .hero__art img {
   filter: saturate(0.9) sepia(0.08) contrast(1.08) brightness(1.04) drop-shadow(0 34px 70px rgba(15, 42, 33, 0.18));
   height: auto;
@@ -1692,6 +1698,11 @@ html {
   inset: 0;
   transform: none;
   z-index: 1;
+}
+
+.hero__art picture {
+  height: 100%;
+  width: 100%;
 }
 
 .hero__art img {

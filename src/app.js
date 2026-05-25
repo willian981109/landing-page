@@ -16,6 +16,7 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+const isProduction = process.env.NODE_ENV === "production";
 
 const authRateLimit = createRateLimit({
   windowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
@@ -29,13 +30,21 @@ app.use(securityHeaders);
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      const error = new Error("Origin not allowed by CORS");
+      if (!isProduction && allowedOrigins.length === 0) {
+        return callback(null, true);
+      }
+
+      const error = new Error(
+        allowedOrigins.length === 0
+          ? "CORS origin is not configured"
+          : "Origin not allowed by CORS"
+      );
       error.statusCode = 403;
-      error.code = "CORS_BLOCKED";
+      error.code = allowedOrigins.length === 0 ? "CORS_NOT_CONFIGURED" : "CORS_BLOCKED";
       return callback(error);
     },
   })

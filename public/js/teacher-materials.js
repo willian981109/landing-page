@@ -96,20 +96,23 @@ async function fetchTeacherApi(path, options = {}) {
     },
   });
 
-  if (response.status === 401) {
-    redirectToLogin();
-    return null;
-  }
-
-  if (response.status === 403) {
-    throw new Error("Sua conta nao tem permissao para acessar este recurso.");
-  }
-
   if (response.status === 204) {
     return null;
   }
 
   const data = await response.json().catch(() => ({}));
+
+  if (response.status === 401) {
+    if (window.EnglishStudioAuth?.handleUnauthorized("teacher", data)) {
+      return null;
+    }
+
+    throw new Error(data.error || "Nao foi possivel validar sua sessao. Tente novamente.");
+  }
+
+  if (response.status === 403) {
+    throw new Error("Sua conta nao tem permissao para acessar este recurso.");
+  }
 
   if (!response.ok) {
     throw new Error(data.error || "Não foi possível concluir a ação.");

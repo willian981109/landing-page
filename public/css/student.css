@@ -47,6 +47,7 @@ button {
     "header"
     "sidebar"
     "main";
+  grid-template-rows: auto auto 1fr;
   min-height: 100svh;
 }
 
@@ -124,6 +125,7 @@ button {
 
 .sidebar {
   background: var(--green-900);
+  align-self: start;
   display: flex;
   gap: 0.45rem;
   grid-area: sidebar;
@@ -1287,4 +1289,43 @@ select,
 textarea {
   background: rgba(255, 255, 255, 0.78);
   border-color: rgba(15, 42, 33, 0.14);
+}
+
+@media (max-width: 979px) {
+  .sidebar {
+    align-items: stretch;
+    display: flex;
+    gap: 0.55rem;
+    overflow-x: auto;
+    padding: 0.85rem 1rem;
+    scroll-snap-type: x proximity;
+  }
+
+  .sidebar__item {
+    align-items: center;
+    display: inline-flex;
+    flex: 0 0 clamp(6rem, 30vw, 8rem);
+    font-size: clamp(0.68rem, 2.5vw, 0.78rem);
+    height: clamp(5.6rem, 18vw, 7.1rem);
+    justify-content: center;
+    line-height: 1.15;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0.8rem;
+    scroll-snap-align: start;
+    text-align: center;
+    white-space: normal;
+    width: clamp(6rem, 30vw, 8rem);
+    word-break: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .sidebar__item:hover,
+  .sidebar__item.active {
+    flex-basis: clamp(6rem, 30vw, 8rem);
+    height: clamp(5.6rem, 18vw, 7.1rem);
+    transform: none;
+    width: clamp(6rem, 30vw, 8rem);
+  }
 }

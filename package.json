@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "db:apply": "node scripts/applySchema.js",
+    "deploy:check": "node scripts/checkDeployReady.js --strict",
+    "deploy:check:local": "node scripts/checkDeployReady.js",
     "seed:admin": "node scripts/seedAdmin.js",
     "test:admin-flow": "node scripts/testAdminFlow.js",
     "test:security": "node scripts/testSecurityFlow.js"

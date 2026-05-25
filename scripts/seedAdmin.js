@@ -3,15 +3,37 @@ require("dotenv").config();
 const bcrypt = require("bcrypt");
 
 const { pool } = require("../src/database/pool");
+const {
+  getPasswordIssues,
+  normalizeEmail,
+  sanitizePlainText,
+} = require("../src/utils/securityValidation");
 
-const ADMIN_USER = {
-  name: "Teacher Admin",
-  email: "admin@english.com",
-  password: process.env.ADMIN_PASSWORD || "Admin#2026",
-  role: "teacher",
-};
+const DEFAULT_DEV_ADMIN_PASSWORD = "Admin#2026";
+
+function getAdminUser() {
+  const isProduction = process.env.NODE_ENV === "production";
+  const password = process.env.ADMIN_PASSWORD || (isProduction ? "" : DEFAULT_DEV_ADMIN_PASSWORD);
+  const passwordIssues = getPasswordIssues(password);
+
+  if (!password) {
+    throw new Error("ADMIN_PASSWORD must be configured before seeding production.");
+  }
+
+  if (passwordIssues.length) {
+    throw new Error(`ADMIN_PASSWORD is not strong enough: ${passwordIssues.join(" ")}`);
+  }
+
+  return {
+    name: sanitizePlainText(process.env.ADMIN_NAME || "Teacher Admin", 120),
+    email: normalizeEmail(process.env.ADMIN_EMAIL || "admin@english.com"),
+    password,
+    role: "teacher",
+  };
+}
 
 async function seedAdmin() {
+  const ADMIN_USER = getAdminUser();
   const existingUser = await pool.query("SELECT id, email FROM users WHERE email = $1", [
     ADMIN_USER.email,
   ]);
@@ -21,7 +43,8 @@ async function seedAdmin() {
     return;
   }
 
-  const passwordHash = await bcrypt.hash(ADMIN_USER.password, 10);
+  const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS) || 12;
+  const passwordHash = await bcrypt.hash(ADMIN_USER.password, saltRounds);
   const result = await pool.query(
     `
       INSERT INTO users (name, email, password_hash, role)

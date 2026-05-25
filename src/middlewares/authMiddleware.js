@@ -1,9 +1,10 @@
 const jwt = require("jsonwebtoken");
 const { pool } = require("../database/pool");
 
-function createAuthError(message, statusCode = 401) {
+function createAuthError(message, statusCode = 401, code = "AUTH_REQUIRED") {
   const error = new Error(message);
   error.statusCode = statusCode;
+  error.code = code;
   return error;
 }
 
@@ -19,7 +20,9 @@ function verifyToken(token) {
       throw error;
     }
 
-    return jwt.verify(token, previousSecret);
+    return jwt.verify(token, previousSecret, {
+      issuer: process.env.JWT_ISSUER || "english-studio",
+    });
   }
 }
 
@@ -28,13 +31,13 @@ async function authMiddleware(req, res, next) {
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
-      throw createAuthError("Authorization header is required");
+      throw createAuthError("Authorization header is required", 401, "AUTH_REQUIRED");
     }
 
     const [type, token] = authHeader.split(" ");
 
     if (type !== "Bearer" || !token) {
-      throw createAuthError("Bearer token is required");
+      throw createAuthError("Bearer token is required", 401, "AUTH_REQUIRED");
     }
 
     const decoded = verifyToken(token);
@@ -44,7 +47,7 @@ async function authMiddleware(req, res, next) {
     );
 
     if (userResult.rowCount === 0) {
-      throw createAuthError("Invalid or expired token");
+      throw createAuthError("Invalid or expired token", 401, "TOKEN_INVALID");
     }
 
     req.user = {
@@ -54,8 +57,12 @@ async function authMiddleware(req, res, next) {
 
     return next();
   } catch (error) {
-    if (error.name === "JsonWebTokenError" || error.name === "TokenExpiredError") {
-      return next(createAuthError("Invalid or expired token"));
+    if (error.name === "TokenExpiredError") {
+      return next(createAuthError("Invalid or expired token", 401, "TOKEN_EXPIRED"));
+    }
+
+    if (error.name === "JsonWebTokenError") {
+      return next(createAuthError("Invalid or expired token", 401, "TOKEN_INVALID"));
     }
 
     return next(error);

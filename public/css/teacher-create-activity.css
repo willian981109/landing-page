@@ -436,6 +436,18 @@ h3 {
   padding: 0.9rem 1rem;
 }
 
+.success-message.is-error {
+  background: rgba(122, 62, 47, 0.1);
+  border-color: rgba(122, 62, 47, 0.24);
+  color: #7a3e2f;
+}
+
+.success-message.is-success {
+  background: rgba(31, 61, 43, 0.08);
+  border-color: rgba(31, 61, 43, 0.18);
+  color: var(--green-900);
+}
+
 .materials-card {
   display: grid;
   gap: 1rem;

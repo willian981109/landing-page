@@ -3,6 +3,7 @@ function roleMiddleware(allowedRoles) {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
       const error = new Error("Forbidden");
       error.statusCode = 403;
+      error.code = "FORBIDDEN";
       return next(error);
     }
 

@@ -14,6 +14,15 @@ function isUuid(value) {
   return typeof value === "string" && /^[0-9a-f-]{36}$/i.test(value);
 }
 
+function isHttpUrl(value) {
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol);
+  } catch (error) {
+    return false;
+  }
+}
+
 function validateActivityInput(
   { title, description, deadline, points, teacher_id, student_id, materials },
   { requireStudent = false } = {}
@@ -54,6 +63,10 @@ function validateActivityInput(
 
       if (!String(material.title || "").trim() || !String(material.url || "").trim()) {
         throw createActivityError(`materials[${index}] title and url are required`);
+      }
+
+      if (!isHttpUrl(String(material.url || "").trim())) {
+        throw createActivityError(`materials[${index}].url must be a valid http or https link`);
       }
     });
   }

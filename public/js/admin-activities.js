@@ -121,16 +121,19 @@ async function fetchAdminApi(path, options = {}) {
     },
   });
 
+  const data = await response.json().catch(() => ({}));
+
   if (response.status === 401) {
-    redirectToLogin();
-    return null;
+    if (window.EnglishStudioAuth?.handleUnauthorized("teacher", data)) {
+      return null;
+    }
+
+    throw new Error(data.error || "Nao foi possivel validar sua sessao. Tente novamente.");
   }
 
   if (response.status === 403) {
     throw new Error("Sua conta nao tem permissao para acessar este recurso.");
   }
-
-  const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
     throw new Error(data.error || "Não foi possível concluir a ação.");

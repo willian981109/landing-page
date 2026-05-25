@@ -21,6 +21,15 @@ function isTime(value) {
   return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(value);
 }
 
+function isHttpUrl(value) {
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol);
+  } catch (error) {
+    return false;
+  }
+}
+
 function normalizeTime(value) {
   if (!value) {
     return value;
@@ -44,6 +53,16 @@ function normalizeDateValue(value) {
   }
 
   return String(value ?? "").slice(0, 10);
+}
+
+function validateOptionalUrl(value, fieldName) {
+  if (value === undefined || value === null) {
+    return;
+  }
+
+  if (!isHttpUrl(value)) {
+    throw createScheduleError(`${fieldName} must be a valid http or https link`);
+  }
 }
 
 function isScheduleSlotConflict(error) {
@@ -158,6 +177,8 @@ async function createAdminSchedule(teacherId, payload) {
   if (!VALID_SCHEDULE_STATUSES.includes(status) || status === "pending_change") {
     throw createScheduleError("status must be scheduled, confirmed, canceled or completed");
   }
+
+  validateOptionalUrl(meetLink, "meet_link");
 
   const student = await studentModel.findStudentById(studentId);
 
@@ -350,6 +371,7 @@ async function updateAdminSchedule(scheduleId, teacherId, payload) {
 
   const meetLink = normalizeOptionalText(payload.meet_link ?? payload.meetLink);
   const notes = normalizeOptionalText(payload.notes);
+  validateOptionalUrl(meetLink, "meet_link");
 
   const normalizedClassDate = String(classDate).slice(0, 10);
   const normalizedClassTime = normalizeTime(String(classTime).slice(0, 8));

@@ -144,6 +144,17 @@ function setStudentStatus(message, type = "") {
   studentStatus.textContent = message;
 }
 
+function setAssignmentMessage(message, type = "") {
+  successMessage.classList.remove("is-error", "is-success");
+  successMessage.hidden = !message;
+
+  if (type) {
+    successMessage.classList.add(`is-${type}`);
+  }
+
+  successMessage.textContent = message;
+}
+
 function renderStudentOptions(students) {
   if (students.length === 0) {
     studentSelect.innerHTML = '<option value="">Nenhum aluno cadastrado</option>';
@@ -180,11 +191,16 @@ async function loadStudents() {
       },
     });
 
+    const data = await response.json().catch(() => ({}));
+
     if (response.status === 401) {
       studentSelect.innerHTML = '<option value="">Faça login novamente</option>';
-      setStudentStatus("Sessão expirada. Redirecionando para login...", "error");
-      redirectToLogin();
-      return;
+
+      if (window.EnglishStudioAuth?.handleUnauthorized("teacher", data)) {
+        return;
+      }
+
+      throw new Error(data.error || "Nao foi possivel validar sua sessao. Tente novamente.");
     }
 
     if (response.status === 403) {
@@ -194,12 +210,10 @@ async function loadStudents() {
     }
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || "Erro ao buscar alunos");
+      throw new Error(data.error || "Erro ao buscar alunos");
     }
 
-    const students = await response.json();
-    renderStudentOptions(students);
+    renderStudentOptions(Array.isArray(data) ? data : []);
   } catch (error) {
     console.error("Erro ao carregar alunos:", error);
     studentSelect.innerHTML = '<option value="">Erro ao carregar alunos</option>';
@@ -371,7 +385,7 @@ form.addEventListener("submit", async (event) => {
 
   if (!selectedStudentId) {
     studentSelect.focus();
-    alert("Selecione um aluno para enviar a atividade.");
+    setAssignmentMessage("Selecione um aluno para enviar a atividade.", "error");
     return;
   }
 
@@ -387,9 +401,14 @@ form.addEventListener("submit", async (event) => {
       body: JSON.stringify(payload),
     });
 
+    const data = await response.json().catch(() => ({}));
+
     if (response.status === 401) {
-      redirectToLogin("Sua sessão expirou. Faça login novamente.");
-      return;
+      if (window.EnglishStudioAuth?.handleUnauthorized("teacher", data)) {
+        return;
+      }
+
+      throw new Error(data.error || "Nao foi possivel validar sua sessao. Tente novamente.");
     }
 
     if (response.status === 403) {
@@ -397,15 +416,10 @@ form.addEventListener("submit", async (event) => {
     }
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Erro ao criar atividade");
+      throw new Error(data.error || "Erro ao criar atividade");
     }
 
-    await response.json();
-
-    alert("Atividade criada com sucesso");
-    successMessage.hidden = false;
-    successMessage.textContent = "Atividade criada com sucesso";
+    setAssignmentMessage("Atividade criada com sucesso.", "success");
     form.dataset.published = "true";
     form.reset();
     clearMaterials();
@@ -416,7 +430,7 @@ form.addEventListener("submit", async (event) => {
       successMessage.hidden = true;
     }, 3200);
   } catch (error) {
-    alert(error.message);
+    setAssignmentMessage(error.message, "error");
   }
 });
 

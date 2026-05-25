@@ -100,9 +100,19 @@
     }
   }
 
+  function getStoredToken(role) {
+    const config = SESSION_CONFIG[role];
+
+    if (!config) {
+      return "";
+    }
+
+    return localStorage.getItem(config.tokenKey) || "";
+  }
+
   function hasValidStoredSession(role) {
     const config = SESSION_CONFIG[role];
-    const token = config ? localStorage.getItem(config.tokenKey) : "";
+    const token = getStoredToken(role);
     const user = getStoredUser(role);
     const payload = token ? getTokenPayload(token) : null;
     const expiresAt = payload?.exp ? payload.exp * 1000 : 0;
@@ -110,10 +120,12 @@
     return Boolean(token && user?.role === role && payload?.role === role && expiresAt > Date.now());
   }
 
-  function canAdoptSession(role) {
-    const otherRole = role === "student" ? "teacher" : "student";
+  function isStoredTokenExpired(role, skewMs = 0) {
+    const token = getStoredToken(role);
+    const payload = token ? getTokenPayload(token) : null;
+    const expiresAt = payload?.exp ? payload.exp * 1000 : 0;
 
-    return hasValidStoredSession(role) && !hasValidStoredSession(otherRole);
+    return Boolean(!token || payload?.role !== role || !expiresAt || expiresAt <= Date.now() + skewMs);
   }
 
   function isSessionValid(role) {
@@ -146,11 +158,7 @@
 
     const activeRole = getActiveRole();
 
-    if (activeRole) {
-      return activeRole === role && hasValidStoredSession(role);
-    }
-
-    return canAdoptSession(role);
+    return activeRole === role && hasValidStoredSession(role);
   }
 
   function getSession(role) {
@@ -197,6 +205,24 @@
     redirectHome();
   }
 
+  function handleUnauthorized(role, responseData = {}) {
+    const authCodes = new Set(["AUTH_REQUIRED", "TOKEN_EXPIRED", "TOKEN_INVALID"]);
+    const code = String(responseData?.code || "");
+    const message = String(responseData?.error || "").toLowerCase();
+    const hasExplicitAuthFailure =
+      authCodes.has(code) ||
+      message.includes("invalid or expired token") ||
+      message.includes("authorization header") ||
+      message.includes("bearer token");
+
+    if (isStoredTokenExpired(role) || hasExplicitAuthFailure) {
+      logout(role);
+      return true;
+    }
+
+    return false;
+  }
+
   window.EnglishStudioAuth = {
     clearSession,
     clearStudentSession,
@@ -204,7 +230,10 @@
     getActiveRole,
     getSession,
     getStoredUser,
+    getStoredToken,
+    handleUnauthorized,
     hasValidStoredSession,
+    isStoredTokenExpired,
     isSessionValid,
     canAutoRedirect,
     logout,
