@@ -1,4 +1,6 @@
-require("dotenv").config();
+const { loadEnvironment } = require("./src/config/loadEnvironment");
+
+loadEnvironment();
 
 const app = require("./src/app");
 const { testDatabaseConnection } = require("./src/database/pool");

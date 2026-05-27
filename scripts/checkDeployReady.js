@@ -1,7 +1,7 @@
-require("dotenv").config();
-
-const { pool } = require("../src/database/pool");
+const { loadEnvironment } = require("../src/config/loadEnvironment");
 const { validateEnvironment } = require("../src/config/validateEnvironment");
+
+let pool;
 
 async function countInvalidRows(label, query) {
   const result = await pool.query(query);
@@ -77,12 +77,16 @@ async function checkDatabaseIntegrity() {
 }
 
 async function checkDeployReady() {
-  const strict = process.argv.includes("--strict") ||
+  const { args } = loadEnvironment();
+  const strict = args.includes("--strict") ||
     process.env.CHECK_STRICT === "true" ||
     process.env.NODE_ENV === "production";
   const environment = validateEnvironment(process.env, {
     strict,
   });
+
+  ({ pool } = require("../src/database/pool"));
+
   const invalidDatabaseRows = await checkDatabaseIntegrity();
 
   environment.warnings.forEach((warning) => {
@@ -108,9 +112,17 @@ async function checkDeployReady() {
 
 checkDeployReady()
   .catch((error) => {
+    error.warnings?.forEach((warning) => {
+      console.error(`Environment warning: ${warning}`);
+    });
+    error.issues?.forEach((issue) => {
+      console.error(`Environment issue: ${issue}`);
+    });
     console.error(error.message);
     process.exitCode = 1;
   })
   .finally(async () => {
-    await pool.end();
+    if (pool) {
+      await pool.end();
+    }
   });

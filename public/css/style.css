@@ -774,7 +774,7 @@ h3 {
 }
 
 .service-grid {
-  align-items: stretch;
+  align-items: start;
   display: grid;
   gap: 1rem;
   margin-top: 3rem;

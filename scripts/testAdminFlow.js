@@ -7,12 +7,14 @@ const { pool } = require("../src/database/pool");
 const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3000";
 const TEST_PASSWORD = "Test#1234";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Admin#2026";
+const TEST_CLIENT_ID = process.env.TEST_CLIENT_ID || `admin-flow-${process.pid}-${Date.now()}`;
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      "X-Test-Client-Id": TEST_CLIENT_ID,
       ...(options.headers || {}),
     },
   });

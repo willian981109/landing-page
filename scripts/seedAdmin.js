@@ -1,13 +1,13 @@
-require("dotenv").config();
-
 const bcrypt = require("bcrypt");
 
-const { pool } = require("../src/database/pool");
+const { loadEnvironment } = require("../src/config/loadEnvironment");
 const {
   getPasswordIssues,
   normalizeEmail,
   sanitizePlainText,
 } = require("../src/utils/securityValidation");
+
+let pool;
 
 const DEFAULT_DEV_ADMIN_PASSWORD = "Admin#2026";
 
@@ -33,6 +33,9 @@ function getAdminUser() {
 }
 
 async function seedAdmin() {
+  loadEnvironment();
+  ({ pool } = require("../src/database/pool"));
+
   const ADMIN_USER = getAdminUser();
   const existingUser = await pool.query("SELECT id, email FROM users WHERE email = $1", [
     ADMIN_USER.email,
@@ -61,9 +64,11 @@ async function seedAdmin() {
 seedAdmin()
   .catch((error) => {
     console.error("Could not seed admin user");
-    console.error(error);
+    console.error(error.message);
     process.exitCode = 1;
   })
   .finally(async () => {
-    await pool.end();
+    if (pool) {
+      await pool.end();
+    }
   });

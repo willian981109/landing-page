@@ -7,9 +7,12 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "db:apply": "node scripts/applySchema.js",
+    "db:apply:production": "node scripts/applySchema.js --production --env-path=.env.production",
     "deploy:check": "node scripts/checkDeployReady.js --strict",
+    "deploy:check:production": "node scripts/checkDeployReady.js --production --env-path=.env.production --strict",
     "deploy:check:local": "node scripts/checkDeployReady.js",
     "seed:admin": "node scripts/seedAdmin.js",
+    "seed:admin:production": "node scripts/seedAdmin.js --production --env-path=.env.production",
     "test:admin-flow": "node scripts/testAdminFlow.js",
     "test:security": "node scripts/testSecurityFlow.js"
   },

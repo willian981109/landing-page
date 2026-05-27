@@ -21,6 +21,7 @@ const studentLoginForm = document.querySelector("[data-student-login-form]");
 const revealItems = document.querySelectorAll(".reveal");
 const packageGrid = document.querySelector(".service-grid");
 const packageCards = document.querySelectorAll(".service-card");
+let activePackageCard = null;
 const floralCanvas = document.querySelector("[data-floral-background]");
 const wordCard = document.querySelector("[data-word-card]");
 const wordText = document.querySelector("[data-word-text]");
@@ -629,12 +630,25 @@ function closePackageCard(card) {
   card.classList.remove("active");
   details?.classList.remove("expanded");
   toggle?.setAttribute("aria-expanded", "false");
+  if (toggle) {
+    toggle.textContent = "Saiba mais";
+  }
   detailsLinks?.forEach((item) => item.setAttribute("tabindex", "-1"));
 
   if (details) {
     details.setAttribute("aria-hidden", "true");
     details.style.maxHeight = "0px";
   }
+
+  if (activePackageCard === card) {
+    activePackageCard = null;
+  }
+}
+
+function closeAllPackageCards() {
+  packageCards.forEach((card) => closePackageCard(card));
+  activePackageCard = null;
+  syncPackageGridState();
 }
 
 function syncPackageGridState() {
@@ -648,15 +662,23 @@ function openPackageCard(card) {
   const details = card.querySelector("[data-package-details]");
   const detailsLinks = details?.querySelectorAll("a, button");
 
+  if (activePackageCard && activePackageCard !== card) {
+    closePackageCard(activePackageCard);
+  }
+
   packageCards.forEach((item) => {
     if (item !== card) {
       closePackageCard(item);
     }
   });
 
+  activePackageCard = card;
   card.classList.add("active");
   details?.classList.add("expanded");
   toggle?.setAttribute("aria-expanded", "true");
+  if (toggle) {
+    toggle.textContent = "Fechar";
+  }
   detailsLinks?.forEach((item) => item.removeAttribute("tabindex"));
 
   if (details) {
@@ -668,15 +690,22 @@ function openPackageCard(card) {
 }
 
 function setupPackageCards() {
+  if (!packageGrid || packageGrid.dataset.packageCardsReady === "true") {
+    return;
+  }
+
+  packageGrid.dataset.packageCardsReady = "true";
   let packageResizeFrame = 0;
 
   packageCards.forEach((card) => {
     const toggle = card.querySelector("[data-package-toggle]");
 
-    toggle?.addEventListener("click", () => {
-      if (card.classList.contains("active")) {
-        closePackageCard(card);
-        syncPackageGridState();
+    toggle?.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (activePackageCard === card) {
+        closeAllPackageCards();
         return;
       }
 

@@ -3,8 +3,12 @@ function createRateLimit({ windowMs, max, keyPrefix = "rate" }) {
 
   return function rateLimit(req, res, next) {
     const now = Date.now();
-    const ip = req.ip || req.socket?.remoteAddress || "unknown";
-    const key = `${keyPrefix}:${ip}`;
+    const testClientId =
+      process.env.NODE_ENV !== "production" && typeof req.get === "function"
+        ? req.get("x-test-client-id")
+        : "";
+    const clientId = testClientId || req.ip || req.socket?.remoteAddress || "unknown";
+    const key = `${keyPrefix}:${clientId}`;
     const current = attempts.get(key);
 
     if (!current || current.expiresAt <= now) {
