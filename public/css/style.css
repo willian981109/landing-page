@@ -1806,6 +1806,10 @@ html {
     display: none;
   }
 
+  .hero__overlay::after {
+    display: none;
+  }
+
   .hero__art {
     inset: 0;
     width: auto;
