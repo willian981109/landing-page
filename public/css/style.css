@@ -1784,6 +1784,11 @@ html {
     display: none;
   }
 
+  .hero__overlay::before,
+  .hero__overlay::after {
+    display: none;
+  }
+
   .hero__art {
     inset: 0;
     width: auto;
@@ -1803,10 +1808,6 @@ html {
 
 @media (max-width: 760px) {
   .hero::before {
-    display: none;
-  }
-
-  .hero__overlay::after {
     display: none;
   }
 
