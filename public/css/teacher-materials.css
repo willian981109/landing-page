@@ -167,3 +167,68 @@
 .danger-button:hover {
   background: rgba(255, 255, 255, 0.86);
 }
+
+/* Responsive hardening for study materials */
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+img,
+svg,
+canvas {
+  height: auto;
+  max-width: 100%;
+}
+
+.materials-layout,
+.material-form,
+.sent-materials-panel,
+.teacher-material-list,
+.teacher-material-card,
+.teacher-material-card__top,
+.teacher-material-card__meta,
+.teacher-material-card__actions {
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 1200px) {
+  .materials-layout {
+    gap: clamp(1rem, 3vw, 1.5rem);
+  }
+}
+
+@media (max-width: 992px) {
+  .materials-layout,
+  .sent-materials-panel__header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .material-form {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .teacher-material-card__top,
+  .teacher-material-card__meta,
+  .teacher-material-card__actions {
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 576px) {
+  .teacher-material-card__top,
+  .teacher-material-card__actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .material-link,
+  .secondary-button,
+  .danger-button {
+    width: 100%;
+  }
+}

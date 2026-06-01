@@ -747,3 +747,69 @@ button {
 .material-options {
   background: rgba(255, 255, 255, 0.96);
 }
+
+/* Responsive hardening for auth and activity creation */
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+img,
+svg,
+canvas {
+  height: auto;
+  max-width: 100%;
+}
+
+.teacher-header,
+.teacher-shell,
+.teacher-main,
+.form-layout,
+.form-card,
+.admin-login-panel,
+.materials-list,
+.material-draft,
+.material-item,
+.activity-list,
+.activity-row {
+  max-width: 100%;
+  min-width: 0;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1200px) {
+  .teacher-main {
+    padding-inline: clamp(1rem, 4vw, 2.5rem);
+  }
+}
+
+@media (max-width: 992px) {
+  .form-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .teacher-header {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 576px) {
+  .teacher-header,
+  .teacher-header__actions,
+  .material-item,
+  .activity-row {
+    align-items: flex-start;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
