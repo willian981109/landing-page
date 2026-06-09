@@ -96,9 +96,9 @@ async function testAdminFlow() {
           url: "https://docs.google.com/document/example",
         },
         {
-          type: "video",
-          title: "Video de apoio",
-          url: "https://youtube.com/watch?v=example",
+          type: "link",
+          title: "Site de apoio",
+          url: "https://example.com/listening-practice",
         },
       ],
     }),
@@ -146,8 +146,22 @@ async function testAdminFlow() {
     headers: studentAuthHeaders,
   });
 
-  if (!myActivities.some((activity) => activity.id === createdActivity.id)) {
+  const studentActivity = myActivities.find((activity) => activity.id === createdActivity.id);
+
+  if (!studentActivity) {
     throw new Error("Created activity was not found in GET /my-activities");
+  }
+
+  const studentLinkMaterial = studentActivity.materials?.find(
+    (material) => material.type === "link" && material.title === "Site de apoio"
+  );
+
+  if (
+    !studentLinkMaterial ||
+    studentLinkMaterial.url !== "https://example.com/listening-practice" ||
+    studentLinkMaterial.file_id
+  ) {
+    throw new Error("GET /my-activities did not expose the clickable link material");
   }
 
   const { data: inProgressActivity } = await request(

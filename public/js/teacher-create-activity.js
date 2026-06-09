@@ -383,13 +383,13 @@ function addMaterial() {
   if (!title) {
     setMaterialDraftMessage("Informe o título do material.", "error");
     materialTitleInput.focus();
-    return;
+    return false;
   }
 
   if (selectedMaterialSource === "link" && !url) {
     setMaterialDraftMessage("Informe uma URL válida.", "error");
     materialUrlInput.focus();
-    return;
+    return false;
   }
 
   if (selectedMaterialSource === "link") {
@@ -402,14 +402,14 @@ function addMaterial() {
     } catch (error) {
       setMaterialDraftMessage("Informe uma URL válida iniciada por http:// ou https://.", "error");
       materialUrlInput.focus();
-      return;
+      return false;
     }
   }
 
   if (selectedMaterialSource === "file" && !selectedFile) {
     setMaterialDraftMessage("Selecione um arquivo antes de adicionar.", "error");
     materialFileInput.click();
-    return;
+    return false;
   }
 
   materials.push(
@@ -431,6 +431,19 @@ function addMaterial() {
   setAssignmentMessage("Material anexado à atividade.", "success");
   closeMaterialDraft();
   renderMaterials();
+  return true;
+}
+
+function hasPendingMaterialDraft() {
+  if (materialDraft.hidden) {
+    return false;
+  }
+
+  return Boolean(
+    materialTitleInput.value.trim() ||
+      materialUrlInput.value.trim() ||
+      selectedFile
+  );
 }
 
 materialToggle.addEventListener("click", (event) => {
@@ -497,6 +510,10 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   if (!form.reportValidity()) {
+    return;
+  }
+
+  if (hasPendingMaterialDraft() && !addMaterial()) {
     return;
   }
 

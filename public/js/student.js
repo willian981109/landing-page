@@ -505,7 +505,9 @@ function renderActivityMaterials(materials = []) {
               ${
                 material.file_id
                   ? `<button class="attachment-item__action" type="button" data-open-file="${material.file_id}">Acessar</button>`
-                  : `<a class="attachment-item__action" href="${escapeHtml(material.url)}" target="_blank" rel="noreferrer">Acessar</a>`
+                  : material.url
+                    ? `<a class="attachment-item__action" href="${escapeHtml(material.url)}" target="_blank" rel="noopener noreferrer">Acessar</a>`
+                    : `<span class="attachment-item__action" aria-disabled="true">Indisponível</span>`
               }
             </article>
           `
