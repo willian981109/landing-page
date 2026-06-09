@@ -132,8 +132,7 @@ ALTER TABLE activity_materials
 ALTER TABLE activity_materials
   ADD CONSTRAINT activity_materials_source_check
   CHECK (
-    (url IS NOT NULL AND uploaded_file_id IS NULL)
-    OR (url IS NULL AND uploaded_file_id IS NOT NULL)
+    url IS NOT NULL OR uploaded_file_id IS NOT NULL
   );
 
 CREATE UNIQUE INDEX IF NOT EXISTS activity_materials_uploaded_file_idx
@@ -187,8 +186,7 @@ ALTER TABLE study_materials
 ALTER TABLE study_materials
   ADD CONSTRAINT study_materials_source_check
   CHECK (
-    (url IS NOT NULL AND uploaded_file_id IS NULL)
-    OR (url IS NULL AND uploaded_file_id IS NOT NULL)
+    url IS NOT NULL OR uploaded_file_id IS NOT NULL
   );
 
 CREATE UNIQUE INDEX IF NOT EXISTS study_materials_uploaded_file_idx

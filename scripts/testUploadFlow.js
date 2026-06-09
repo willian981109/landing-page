@@ -78,6 +78,7 @@ async function run() {
         {
           type: "pdf",
           title: "Lesson PDF",
+          url: "https://example.com/lesson-unit-1",
           uploaded_file_id: activityUpload.id,
         },
       ],
@@ -88,8 +89,12 @@ async function run() {
     const persistedActivity = studentActivities.find((item) => item.id === activity.id);
     const persistedFile = persistedActivity?.materials?.[0];
 
-    if (persistedFile?.file_id !== activityUpload.id || persistedFile.file_name !== "lesson-unit-1.pdf") {
-      throw new Error("Uploaded activity file metadata was not persisted");
+    if (
+      persistedFile?.file_id !== activityUpload.id ||
+      persistedFile.file_name !== "lesson-unit-1.pdf" ||
+      persistedFile.url !== "https://example.com/lesson-unit-1"
+    ) {
+      throw new Error("Uploaded activity file and link were not persisted together");
     }
 
     console.log("2. Validate student file authorization");
@@ -144,6 +149,7 @@ async function run() {
       title: "Listening practice",
       description: "Private audio material",
       type: "audio",
+      url: "https://example.com/listening-guide",
       uploaded_file_id: materialUpload.id,
     });
     createdMaterialIds.push(material.id);
@@ -151,8 +157,11 @@ async function run() {
     const studentMaterials = await studyMaterialService.listStudentStudyMaterials(studentOne.id);
     const persistedMaterial = studentMaterials.find((item) => item.id === material.id);
 
-    if (persistedMaterial?.file_id !== materialUpload.id) {
-      throw new Error("Uploaded study material was not persisted");
+    if (
+      persistedMaterial?.file_id !== materialUpload.id ||
+      persistedMaterial.url !== "https://example.com/listening-guide"
+    ) {
+      throw new Error("Uploaded study material file and link were not persisted together");
     }
 
     await studyMaterialService.deleteStudyMaterial(material.id, teacherId);

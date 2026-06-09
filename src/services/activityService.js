@@ -70,9 +70,9 @@ function validateActivityInput(
         throw createActivityError(`materials[${index}].title is required`);
       }
 
-      if (Boolean(url) === Boolean(uploadedFileId)) {
+      if (!url && !uploadedFileId) {
         throw createActivityError(
-          `materials[${index}] must contain either url or uploaded_file_id`
+          `materials[${index}] must contain url, uploaded_file_id or both`
         );
       }
 

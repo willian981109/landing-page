@@ -746,6 +746,19 @@ h3 {
   text-transform: uppercase;
 }
 
+.attachment-item__actions,
+.material-card__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.material-card__actions {
+  justify-content: flex-start;
+}
+
 .activity-card__complete {
   justify-self: start;
 }
@@ -995,9 +1008,14 @@ h3 {
     grid-template-columns: auto 1fr;
   }
 
-  .attachment-item__action {
+  .attachment-item__actions {
     grid-column: 1 / -1;
-    justify-self: stretch;
+    justify-content: stretch;
+  }
+
+  .attachment-item__action {
+    flex: 1 1 9rem;
+    justify-self: auto;
     text-align: center;
   }
 

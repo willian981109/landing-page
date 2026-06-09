@@ -61,8 +61,8 @@ async function normalizeStudyMaterialPayload(payload = {}) {
     throw createStudyMaterialError("type must be pdf, video, link, exercise, audio, document or vocabulary");
   }
 
-  if (Boolean(url) === Boolean(uploadedFileId)) {
-    throw createStudyMaterialError("url or uploaded_file_id is required");
+  if (!url && !uploadedFileId) {
+    throw createStudyMaterialError("url, uploaded_file_id or both are required");
   }
 
   if (url && !validateUrl(url)) {

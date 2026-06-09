@@ -180,23 +180,24 @@ function renderSelectedFile() {
 function setSourceMode(source, { preserveFile = false } = {}) {
   const type = materialTypeSelect.value;
   const allowedSources = getAllowedSources(type);
-  state.sourceMode = allowedSources.includes(source) ? source : allowedSources[0];
-  const usesFile = state.sourceMode === "file";
+  const allowsLink = allowedSources.includes("link");
+  const allowsFile = allowedSources.includes("file");
+  const usesBoth = allowsLink && allowsFile;
+  state.sourceMode = usesBoth ? "both" : allowedSources.includes(source) ? source : allowedSources[0];
 
-  materialSourceToggle.hidden = allowedSources.length < 2;
+  materialSourceToggle.hidden = true;
   materialSourceButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.materialSource === state.sourceMode);
   });
 
-  materialUrlField.hidden = usesFile;
-  materialFileField.hidden = !usesFile;
-  materialUrlInput.required = !usesFile;
+  materialUrlField.hidden = !allowsLink;
+  materialFileField.hidden = !allowsFile;
+  materialUrlInput.required = allowsLink && !allowsFile;
 
-  if (usesFile) {
+  if (allowsFile) {
     const rule = window.EnglishStudioFiles.getRule(type);
     materialFileInput.accept = rule?.accept || "";
     materialFileHelp.textContent = rule?.help || "";
-    materialUrlInput.value = "";
   } else if (!preserveFile) {
     state.selectedFile = null;
     state.existingFile = null;
@@ -285,7 +286,12 @@ function renderMaterials() {
             ${
               material.file_id
                 ? `<button class="material-link" type="button" data-open-file="${material.file_id}">Abrir arquivo</button>`
-                : `<a class="material-link" href="${escapeHtml(material.url)}" target="_blank" rel="noreferrer">Abrir material</a>`
+                : ""
+            }
+            ${
+              material.url
+                ? `<a class="material-link" href="${escapeHtml(material.url)}" target="_blank" rel="noopener noreferrer">Abrir link</a>`
+                : ""
             }
             <button class="secondary-button" type="button" data-edit-material="${material.id}">Editar</button>
             <button class="danger-button" type="button" data-delete-material="${material.id}">Excluir</button>
@@ -392,25 +398,12 @@ async function saveMaterial(event) {
 
   try {
     submitButton.disabled = true;
+    const allowedSources = getAllowedSources(payload.type);
+    const allowsLink = allowedSources.includes("link");
+    const allowsFile = allowedSources.includes("file");
+    const url = allowsLink ? materialUrlInput.value.trim() : "";
 
-    if (state.sourceMode === "file") {
-      if (state.selectedFile) {
-        submitButton.textContent = "Enviando arquivo...";
-        const uploadedFile = await window.EnglishStudioFiles.uploadFile(
-          state.selectedFile,
-          payload.type,
-          token
-        );
-        newUploadId = uploadedFile.file_id;
-        payload.uploaded_file_id = newUploadId;
-      } else if (state.existingFile) {
-        payload.uploaded_file_id = state.existingFile.id;
-      } else {
-        throw new Error("Selecione um arquivo para enviar.");
-      }
-    } else {
-      const url = materialUrlInput.value.trim();
-
+    if (url) {
       try {
         const parsedUrl = new URL(url);
 
@@ -423,6 +416,28 @@ async function saveMaterial(event) {
       }
 
       payload.url = url;
+    }
+
+    if (allowsFile) {
+      if (state.selectedFile) {
+        submitButton.textContent = "Enviando arquivo...";
+        const uploadedFile = await window.EnglishStudioFiles.uploadFile(
+          state.selectedFile,
+          payload.type,
+          token
+        );
+        newUploadId = uploadedFile.file_id;
+        payload.uploaded_file_id = newUploadId;
+      } else if (state.existingFile) {
+        payload.uploaded_file_id = state.existingFile.id;
+      } else if (!url) {
+        throw new Error("Selecione um arquivo para enviar.");
+      }
+    } else if (!url) {
+      if (allowsLink) {
+        materialUrlInput.focus();
+      }
+      throw new Error("Informe um link para o material.");
     }
 
     submitButton.textContent = state.editingId ? "Salvando..." : "Enviando...";

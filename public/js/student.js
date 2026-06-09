@@ -374,11 +374,18 @@ function renderMaterials() {
           <span class="type-chip">${getMaterialLabel(material.type)}</span>
           <h3>${escapeHtml(material.title)}</h3>
           <p>${escapeHtml(material.description || "Material de apoio enviado pela professora.")}</p>
-          ${
-            material.file_id
-              ? `<button class="material-card__action" type="button" data-open-file="${material.file_id}">Abrir arquivo</button>`
-              : `<a href="${escapeHtml(material.url)}" target="_blank" rel="noreferrer">Abrir material</a>`
-          }
+          <div class="material-card__actions">
+            ${
+              material.file_id
+                ? `<button class="material-card__action" type="button" data-open-file="${material.file_id}">Abrir arquivo</button>`
+                : ""
+            }
+            ${
+              material.url
+                ? `<a class="material-card__action" href="${escapeHtml(material.url)}" target="_blank" rel="noopener noreferrer">Abrir link</a>`
+                : ""
+            }
+          </div>
         </article>
       `
     )
@@ -508,13 +515,18 @@ function renderActivityMaterials(materials = []) {
                       : escapeHtml(getMaterialLabel(material.type))
                 }</span>
               </div>
-              ${
-                material.file_id
-                  ? `<button class="attachment-item__action" type="button" data-open-file="${material.file_id}">Acessar</button>`
-                  : material.url
-                    ? `<a class="attachment-item__action" href="${escapeHtml(material.url)}" target="_blank" rel="noopener noreferrer">Acessar</a>`
-                    : `<span class="attachment-item__action" aria-disabled="true">Indisponível</span>`
-              }
+              <div class="attachment-item__actions">
+                ${
+                  material.file_id
+                    ? `<button class="attachment-item__action" type="button" data-open-file="${material.file_id}">Acessar arquivo</button>`
+                    : ""
+                }
+                ${
+                  material.url
+                    ? `<a class="attachment-item__action" href="${escapeHtml(material.url)}" target="_blank" rel="noopener noreferrer">Abrir link</a>`
+                    : ""
+                }
+              </div>
             </article>
           `
         )

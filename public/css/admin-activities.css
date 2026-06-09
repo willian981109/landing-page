@@ -643,6 +643,14 @@ h3 {
   text-transform: uppercase;
 }
 
+.material-item__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+}
+
 .correction-box {
   background: rgba(31, 61, 43, 0.04);
   border: 1px solid rgba(31, 61, 43, 0.1);
@@ -726,10 +734,15 @@ h3 {
     grid-template-columns: auto 1fr;
   }
 
+  .material-item__actions {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+
   .material-item a,
   .material-item button {
-    grid-column: 1 / -1;
-    justify-self: stretch;
+    flex: 1 1 9rem;
+    justify-self: auto;
     text-align: center;
   }
 }

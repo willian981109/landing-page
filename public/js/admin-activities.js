@@ -541,13 +541,18 @@ function renderMaterials(materials = []) {
                       : escapeHtml(type.label)
                 }</small>
               </span>
-              ${
-                material.file_id
-                  ? `<button type="button" data-open-file="${material.file_id}">Abrir</button>`
-                  : material.url
+              <span class="material-item__actions">
+                ${
+                  material.file_id
+                    ? `<button type="button" data-open-file="${material.file_id}">Abrir arquivo</button>`
+                    : ""
+                }
+                ${
+                  material.url
                     ? `<a href="${escapeHtml(material.url)}" target="_blank" rel="noopener noreferrer">Abrir link</a>`
-                    : `<span aria-disabled="true">Indisponível</span>`
-              }
+                    : ""
+                }
+              </span>
             </article>
           `;
         })
