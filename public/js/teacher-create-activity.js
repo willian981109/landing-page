@@ -14,7 +14,8 @@ const materialTypes = {
   pdf: {
     label: "PDF",
     icon: "PDF",
-    sources: ["file"],
+    placeholder: "https://.../material.pdf",
+    sources: ["link", "file"],
   },
   audio: {
     label: "Áudio",
@@ -45,6 +46,7 @@ const materialFileInput = document.querySelector("[data-material-file]");
 const materialFileHelp = document.querySelector("[data-material-file-help]");
 const materialSourceToggle = document.querySelector("[data-material-source-toggle]");
 const materialSourceButtons = document.querySelectorAll("[data-material-source]");
+const materialLinkSourceButton = document.querySelector('[data-material-source="link"]');
 const selectedFilePanel = document.querySelector("[data-selected-file]");
 const selectedFileName = document.querySelector("[data-selected-file-name]");
 const selectedFileSize = document.querySelector("[data-selected-file-size]");
@@ -317,7 +319,18 @@ function openMaterialDraft(kind) {
   const materialType = materialTypes[kind];
 
   draftType.textContent = materialType.label;
-  materialUrlLabel.textContent = kind === "docs" ? "Link do Google Docs" : "URL do material";
+  materialUrlLabel.textContent =
+    kind === "docs"
+      ? "Link do Google Docs"
+      : kind === "pdf"
+        ? "Link do PDF"
+        : "URL do material";
+  materialLinkSourceButton.textContent =
+    kind === "docs"
+      ? "Link Google Docs"
+      : kind === "pdf"
+        ? "Usar link do PDF"
+        : "Inserir link";
   materialUrlInput.placeholder = materialType.placeholder || "https://...";
   materialTitleInput.value = "";
   materialUrlInput.value = "";

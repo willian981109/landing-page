@@ -18,6 +18,7 @@ const materialFileInput = document.querySelector("[data-material-file]");
 const materialFileHelp = document.querySelector("[data-material-file-help]");
 const materialSourceToggle = document.querySelector("[data-material-source-toggle]");
 const materialSourceButtons = document.querySelectorAll("[data-material-source]");
+const materialLinkSourceButton = document.querySelector('[data-material-source="link"]');
 const selectedFilePanel = document.querySelector("[data-selected-file]");
 const selectedFileName = document.querySelector("[data-selected-file-name]");
 const selectedFileSize = document.querySelector("[data-selected-file-size]");
@@ -144,11 +145,11 @@ function formatDate(value) {
 }
 
 function getAllowedSources(type) {
-  if (type === "document") {
+  if (["document", "pdf"].includes(type)) {
     return ["link", "file"];
   }
 
-  if (["pdf", "video", "audio"].includes(type)) {
+  if (["video", "audio"].includes(type)) {
     return ["file"];
   }
 
@@ -205,6 +206,12 @@ function setSourceMode(source, { preserveFile = false } = {}) {
 }
 
 function syncMaterialType({ preserveExisting = false } = {}) {
+  materialLinkSourceButton.textContent =
+    materialTypeSelect.value === "document"
+      ? "Link Google Docs"
+      : materialTypeSelect.value === "pdf"
+        ? "Usar link do PDF"
+        : "Usar link";
   const allowedSources = getAllowedSources(materialTypeSelect.value);
   const existingTypeMatches = state.existingFile
     && (
@@ -433,7 +440,7 @@ async function saveMaterial(event) {
     } else {
       state.materials = [material, ...state.materials];
       resetForm();
-      setMaterialMessage("Arquivo anexado e material enviado com sucesso.", "success");
+      setMaterialMessage("Material enviado com sucesso.", "success");
     }
 
     renderMaterials();

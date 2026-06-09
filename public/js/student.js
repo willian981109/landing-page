@@ -500,7 +500,13 @@ function renderActivityMaterials(materials = []) {
               </span>
               <div class="attachment-item__content">
                 <strong>${escapeHtml(material.title)}</strong>
-                <span>${escapeHtml(material.file_name || getMaterialLabel(material.type))}</span>
+                <span>${
+                  material.file_name
+                    ? escapeHtml(material.file_name)
+                    : material.url
+                      ? escapeHtml(material.url)
+                      : escapeHtml(getMaterialLabel(material.type))
+                }</span>
               </div>
               ${
                 material.file_id

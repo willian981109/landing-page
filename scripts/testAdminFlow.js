@@ -91,9 +91,9 @@ async function testAdminFlow() {
       studentId: tempStudentId,
       materials: [
         {
-          type: "docs",
-          title: "Folha de respostas",
-          url: "https://docs.google.com/document/example",
+          type: "pdf",
+          title: "PDF por link",
+          url: "https://example.com/listening-practice.pdf",
         },
         {
           type: "link",
@@ -106,6 +106,16 @@ async function testAdminFlow() {
 
   if (createdActivity.materials.length !== 2) {
     throw new Error("POST /activities did not save activity materials");
+  }
+
+  if (
+    !createdActivity.materials.some(
+      (material) =>
+        material.type === "pdf" &&
+        material.url === "https://example.com/listening-practice.pdf"
+    )
+  ) {
+    throw new Error("POST /activities did not save the PDF link material");
   }
 
   console.log(`Activity created: ${createdActivity.id}`);

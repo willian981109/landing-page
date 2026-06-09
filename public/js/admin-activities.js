@@ -533,12 +533,20 @@ function renderMaterials(materials = []) {
               <span class="material-item__icon material-item__icon--${escapeHtml(material.type)}">${type.icon}</span>
               <span class="material-item__content">
                 <strong>${escapeHtml(material.title)}</strong>
-                <small>${escapeHtml(material.file_name || type.label)}</small>
+                <small>${
+                  material.file_name
+                    ? escapeHtml(material.file_name)
+                    : material.url
+                      ? escapeHtml(material.url)
+                      : escapeHtml(type.label)
+                }</small>
               </span>
               ${
                 material.file_id
                   ? `<button type="button" data-open-file="${material.file_id}">Abrir</button>`
-                  : `<a href="${escapeHtml(material.url)}" target="_blank" rel="noreferrer">Abrir</a>`
+                  : material.url
+                    ? `<a href="${escapeHtml(material.url)}" target="_blank" rel="noopener noreferrer">Abrir link</a>`
+                    : `<span aria-disabled="true">Indisponível</span>`
               }
             </article>
           `;
