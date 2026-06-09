@@ -1,4 +1,16 @@
 function securityHeaders(req, res, next) {
+  const connectSources = ["'self'"];
+
+  try {
+    const supabaseUrl = new URL(process.env.SUPABASE_URL || "");
+
+    if (supabaseUrl.protocol === "https:") {
+      connectSources.push(supabaseUrl.origin);
+    }
+  } catch (error) {
+    // The environment validator reports malformed production URLs.
+  }
+
   const cspDirectives = [
     "default-src 'self'",
     "base-uri 'self'",
@@ -8,7 +20,7 @@ function securityHeaders(req, res, next) {
     "style-src 'self' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https://images.unsplash.com",
-    "connect-src 'self'",
+    `connect-src ${connectSources.join(" ")}`,
     "media-src 'self'",
     "frame-src 'none'",
     "form-action 'self'",

@@ -533,9 +533,13 @@ function renderMaterials(materials = []) {
               <span class="material-item__icon material-item__icon--${escapeHtml(material.type)}">${type.icon}</span>
               <span class="material-item__content">
                 <strong>${escapeHtml(material.title)}</strong>
-                <small>${type.label}</small>
+                <small>${escapeHtml(material.file_name || type.label)}</small>
               </span>
-              <a href="${escapeHtml(material.url)}" target="_blank" rel="noreferrer">Abrir</a>
+              ${
+                material.file_id
+                  ? `<button type="button" data-open-file="${material.file_id}">Abrir</button>`
+                  : `<a href="${escapeHtml(material.url)}" target="_blank" rel="noreferrer">Abrir</a>`
+              }
             </article>
           `;
         })
@@ -605,6 +609,25 @@ function renderDetail(assignment) {
   `;
 
   detailPanel.querySelector("[data-review-form]").addEventListener("submit", saveReview);
+  detailPanel.querySelectorAll("[data-open-file]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const originalLabel = button.textContent;
+      button.disabled = true;
+      button.textContent = "Abrindo...";
+
+      try {
+        await window.EnglishStudioFiles.openFile(button.dataset.openFile, getAdminToken());
+      } catch (error) {
+        activityState.message = error.message;
+        button.textContent = "Tentar novamente";
+      } finally {
+        button.disabled = false;
+        window.setTimeout(() => {
+          button.textContent = originalLabel;
+        }, 2200);
+      }
+    });
+  });
 }
 
 async function openAssignment(assignmentId) {

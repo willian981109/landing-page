@@ -3,26 +3,28 @@ const materialTypes = {
     label: "Link externo",
     icon: "URL",
     placeholder: "https://...",
+    sources: ["link"],
   },
   docs: {
     label: "Google Docs",
     icon: "DOC",
     placeholder: "https://docs.google.com/document/...",
+    sources: ["link", "file"],
   },
   pdf: {
     label: "PDF",
     icon: "PDF",
-    placeholder: "https://... ou referência do PDF",
+    sources: ["file"],
   },
   audio: {
     label: "Áudio",
     icon: "AUD",
-    placeholder: "https://...",
+    sources: ["file"],
   },
   video: {
     label: "Vídeo",
     icon: "VID",
-    placeholder: "https://...",
+    sources: ["file"],
   },
 };
 
@@ -36,6 +38,18 @@ const materialDraft = document.querySelector("[data-material-draft]");
 const draftType = document.querySelector("[data-draft-type]");
 const materialTitleInput = document.querySelector("[data-material-title]");
 const materialUrlInput = document.querySelector("[data-material-url]");
+const materialUrlField = document.querySelector("[data-material-url-field]");
+const materialUrlLabel = document.querySelector("[data-material-url-label]");
+const materialFileField = document.querySelector("[data-material-file-field]");
+const materialFileInput = document.querySelector("[data-material-file]");
+const materialFileHelp = document.querySelector("[data-material-file-help]");
+const materialSourceToggle = document.querySelector("[data-material-source-toggle]");
+const materialSourceButtons = document.querySelectorAll("[data-material-source]");
+const selectedFilePanel = document.querySelector("[data-selected-file]");
+const selectedFileName = document.querySelector("[data-selected-file-name]");
+const selectedFileSize = document.querySelector("[data-selected-file-size]");
+const removeSelectedFileButton = document.querySelector("[data-remove-selected-file]");
+const materialDraftMessage = document.querySelector("[data-material-draft-message]");
 const addMaterialButton = document.querySelector("[data-add-material]");
 const cancelMaterialButton = document.querySelector("[data-cancel-material]");
 const materialList = document.querySelector("[data-material-list]");
@@ -43,9 +57,12 @@ const emptyMaterials = document.querySelector("[data-empty-materials]");
 const successMessage = document.querySelector("[data-success-message]");
 const studentSelect = document.querySelector("[data-student-select]");
 const studentStatus = document.querySelector("[data-student-status]");
+const publishActivityButton = form.querySelector('button[type="submit"]');
 
 const materials = [];
 let selectedMaterialKind = "link";
+let selectedMaterialSource = "link";
+let selectedFile = null;
 
 const API_BASE_URL = "";
 const ADMIN_TOKEN_KEY = "englishStudioAdminToken";
@@ -240,14 +257,70 @@ function toggleMaterialOptions() {
   openMaterialOptions();
 }
 
+function setMaterialDraftMessage(message, type = "") {
+  materialDraftMessage.classList.remove("is-error", "is-success");
+
+  if (type) {
+    materialDraftMessage.classList.add(`is-${type}`);
+  }
+
+  materialDraftMessage.textContent = message;
+}
+
+function renderSelectedFile() {
+  selectedFilePanel.hidden = !selectedFile;
+
+  if (!selectedFile) {
+    selectedFileName.textContent = "";
+    selectedFileSize.textContent = "";
+    materialFileInput.value = "";
+    return;
+  }
+
+  selectedFileName.textContent = selectedFile.name;
+  selectedFileSize.textContent = window.EnglishStudioFiles.formatFileSize(selectedFile.size);
+}
+
+function setMaterialSource(source) {
+  const materialType = materialTypes[selectedMaterialKind];
+  selectedMaterialSource = materialType.sources.includes(source)
+    ? source
+    : materialType.sources[0];
+  const usesFile = selectedMaterialSource === "file";
+
+  materialSourceButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.materialSource === selectedMaterialSource);
+  });
+
+  materialUrlField.hidden = usesFile;
+  materialFileField.hidden = !usesFile;
+
+  if (usesFile) {
+    const rule = window.EnglishStudioFiles.getRule(selectedMaterialKind);
+    materialFileInput.accept = rule?.accept || "";
+    materialFileHelp.textContent = rule?.help || "";
+    materialUrlInput.value = "";
+  } else {
+    selectedFile = null;
+    renderSelectedFile();
+  }
+
+  setMaterialDraftMessage("");
+}
+
 function openMaterialDraft(kind) {
   selectedMaterialKind = kind;
   const materialType = materialTypes[kind];
 
   draftType.textContent = materialType.label;
-  materialUrlInput.placeholder = materialType.placeholder;
+  materialUrlLabel.textContent = kind === "docs" ? "Link do Google Docs" : "URL do material";
+  materialUrlInput.placeholder = materialType.placeholder || "https://...";
   materialTitleInput.value = "";
   materialUrlInput.value = "";
+  selectedFile = null;
+  renderSelectedFile();
+  materialSourceToggle.hidden = materialType.sources.length < 2;
+  setMaterialSource(materialType.sources[0]);
   materialDraft.hidden = false;
   materialTitleInput.focus();
 }
@@ -256,6 +329,9 @@ function closeMaterialDraft() {
   materialDraft.hidden = true;
   materialTitleInput.value = "";
   materialUrlInput.value = "";
+  selectedFile = null;
+  renderSelectedFile();
+  setMaterialDraftMessage("");
 }
 
 function clearMaterials() {
@@ -278,7 +354,11 @@ function renderMaterials() {
           <div class="material-item__content">
             <strong>${escapeHtml(material.title)}</strong>
             <span>${materialType.label}</span>
-            <small>${escapeHtml(material.url)}</small>
+            <small>${
+              material.source === "file"
+                ? `${escapeHtml(material.file.name)} · ${window.EnglishStudioFiles.formatFileSize(material.file.size)}`
+                : escapeHtml(material.url)
+            }</small>
           </div>
           <button class="remove-material" type="button" data-remove-material="${index}">
             Remover
@@ -301,21 +381,54 @@ function addMaterial() {
   const url = materialUrlInput.value.trim();
 
   if (!title) {
+    setMaterialDraftMessage("Informe o título do material.", "error");
     materialTitleInput.focus();
     return;
   }
 
-  if (!url) {
+  if (selectedMaterialSource === "link" && !url) {
+    setMaterialDraftMessage("Informe uma URL válida.", "error");
     materialUrlInput.focus();
     return;
   }
 
-  materials.push({
-    type: selectedMaterialKind,
-    title,
-    url,
-  });
+  if (selectedMaterialSource === "link") {
+    try {
+      const parsedUrl = new URL(url);
 
+      if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+        throw new Error();
+      }
+    } catch (error) {
+      setMaterialDraftMessage("Informe uma URL válida iniciada por http:// ou https://.", "error");
+      materialUrlInput.focus();
+      return;
+    }
+  }
+
+  if (selectedMaterialSource === "file" && !selectedFile) {
+    setMaterialDraftMessage("Selecione um arquivo antes de adicionar.", "error");
+    materialFileInput.click();
+    return;
+  }
+
+  materials.push(
+    selectedMaterialSource === "file"
+      ? {
+          type: selectedMaterialKind,
+          title,
+          source: "file",
+          file: selectedFile,
+        }
+      : {
+          type: selectedMaterialKind,
+          title,
+          source: "link",
+          url,
+        }
+  );
+
+  setAssignmentMessage("Material anexado à atividade.", "success");
   closeMaterialDraft();
   renderMaterials();
 }
@@ -334,6 +447,30 @@ materialOptions.querySelectorAll("[data-material-kind]").forEach((option) => {
     openMaterialDraft(option.dataset.materialKind);
     closeMaterialOptions();
   });
+});
+
+materialSourceButtons.forEach((button) => {
+  button.addEventListener("click", () => setMaterialSource(button.dataset.materialSource));
+});
+
+materialFileInput.addEventListener("change", () => {
+  const [file] = materialFileInput.files;
+
+  try {
+    selectedFile = window.EnglishStudioFiles.validateFile(file, selectedMaterialKind);
+    renderSelectedFile();
+    setMaterialDraftMessage("Arquivo selecionado e pronto para anexar.", "success");
+  } catch (error) {
+    selectedFile = null;
+    renderSelectedFile();
+    setMaterialDraftMessage(error.message, "error");
+  }
+});
+
+removeSelectedFileButton.addEventListener("click", () => {
+  selectedFile = null;
+  renderSelectedFile();
+  setMaterialDraftMessage("Arquivo removido.");
 });
 
 addMaterialButton.addEventListener("click", addMaterial);
@@ -369,11 +506,7 @@ form.addEventListener("submit", async (event) => {
     description: formData.get("description"),
     deadline: formData.get("dueDate"),
     points: Number(formData.get("points") || 0),
-    materials: materials.map((material) => ({
-      type: material.type,
-      title: material.title,
-      url: material.url,
-    })),
+    materials: [],
   };
   const selectedStudentId = formData.get("studentId");
   const token = getAdminToken();
@@ -390,8 +523,40 @@ form.addEventListener("submit", async (event) => {
   }
 
   payload.studentId = selectedStudentId;
+  const uploadedFileIds = [];
 
   try {
+    publishActivityButton.disabled = true;
+    publishActivityButton.textContent = "Enviando materiais...";
+    setAssignmentMessage(
+      materials.some((material) => material.source === "file")
+        ? "Enviando arquivos com segurança..."
+        : "Publicando atividade..."
+    );
+
+    for (const material of materials) {
+      if (material.source === "file") {
+        const uploadedFile = await window.EnglishStudioFiles.uploadFile(
+          material.file,
+          material.type,
+          token
+        );
+        uploadedFileIds.push(uploadedFile.file_id);
+        payload.materials.push({
+          type: material.type,
+          title: material.title,
+          uploaded_file_id: uploadedFile.file_id,
+        });
+      } else {
+        payload.materials.push({
+          type: material.type,
+          title: material.title,
+          url: material.url,
+        });
+      }
+    }
+
+    publishActivityButton.textContent = "Publicando atividade...";
     const response = await fetch(`${API_BASE_URL}/activities`, {
       method: "POST",
       headers: {
@@ -430,7 +595,15 @@ form.addEventListener("submit", async (event) => {
       successMessage.hidden = true;
     }, 3200);
   } catch (error) {
+    await Promise.all(
+      uploadedFileIds.map((fileId) =>
+        window.EnglishStudioFiles.cancelUpload(fileId, token).catch(() => {})
+      )
+    );
     setAssignmentMessage(error.message, "error");
+  } finally {
+    publishActivityButton.disabled = false;
+    publishActivityButton.textContent = "Publicar atividade";
   }
 });
 

@@ -127,10 +127,33 @@
               <input type="text" data-material-title placeholder="Ex: Folha de respostas" />
             </label>
 
-            <label class="field">
-              <span>Link ou referência</span>
-              <input type="text" data-material-url placeholder="https://..." />
+            <div class="material-source-toggle" data-material-source-toggle hidden>
+              <button class="active" type="button" data-material-source="link">Link Google Docs</button>
+              <button type="button" data-material-source="file">Enviar arquivo</button>
+            </div>
+
+            <label class="field" data-material-url-field>
+              <span data-material-url-label>URL do material</span>
+              <input type="url" data-material-url placeholder="https://..." />
             </label>
+
+            <div class="field" data-material-file-field hidden>
+              <span>Arquivo</span>
+              <label class="file-picker">
+                <input type="file" data-material-file />
+                <span>Escolher arquivo</span>
+              </label>
+              <small class="field-status" data-material-file-help></small>
+              <div class="selected-file" data-selected-file hidden>
+                <span>
+                  <strong data-selected-file-name></strong>
+                  <small data-selected-file-size></small>
+                </span>
+                <button type="button" data-remove-selected-file>Remover</button>
+              </div>
+            </div>
+
+            <p class="field-status material-draft__message" data-material-draft-message></p>
 
             <div class="draft-actions">
               <button class="secondary-button" type="button" data-cancel-material>Cancelar</button>
@@ -150,6 +173,7 @@
     </main>
 
     <script src="js/auth-session.js" defer></script>
+    <script src="js/material-files.js" defer></script>
     <script src="js/teacher-create-activity.js" defer></script>
   </body>
 </html>

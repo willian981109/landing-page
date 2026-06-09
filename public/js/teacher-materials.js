@@ -1,6 +1,4 @@
 const API_BASE_URL = "";
-const ADMIN_TOKEN_KEY = "englishStudioAdminToken";
-const ADMIN_USER_KEY = "englishStudioAdminUser";
 
 const adminGreeting = document.querySelector("[data-admin-greeting]");
 const adminLogoutButton = document.querySelector("[data-admin-logout]");
@@ -12,6 +10,18 @@ const filterStudent = document.querySelector("[data-filter-student]");
 const formTitle = document.querySelector("[data-form-title]");
 const submitButton = document.querySelector("[data-submit-material]");
 const cancelEditButton = document.querySelector("[data-cancel-edit]");
+const materialTypeSelect = document.querySelector("[data-material-type]");
+const materialUrlField = document.querySelector("[data-material-url-field]");
+const materialUrlInput = materialForm.elements.url;
+const materialFileField = document.querySelector("[data-material-file-field]");
+const materialFileInput = document.querySelector("[data-material-file]");
+const materialFileHelp = document.querySelector("[data-material-file-help]");
+const materialSourceToggle = document.querySelector("[data-material-source-toggle]");
+const materialSourceButtons = document.querySelectorAll("[data-material-source]");
+const selectedFilePanel = document.querySelector("[data-selected-file]");
+const selectedFileName = document.querySelector("[data-selected-file-name]");
+const selectedFileSize = document.querySelector("[data-selected-file-size]");
+const removeSelectedFileButton = document.querySelector("[data-remove-selected-file]");
 
 const materialTypes = {
   pdf: "PDF",
@@ -27,6 +37,9 @@ const state = {
   students: [],
   materials: [],
   editingId: null,
+  sourceMode: "file",
+  selectedFile: null,
+  existingFile: null,
 };
 
 function getAdminToken() {
@@ -35,21 +48,6 @@ function getAdminToken() {
 
 function getAdminUser() {
   return window.EnglishStudioAuth?.getSession("teacher")?.user || null;
-}
-
-function getTokenPayload(token) {
-  try {
-    return JSON.parse(atob(token.split(".")[1]));
-  } catch (error) {
-    return null;
-  }
-}
-
-function isTeacherTokenValid(token) {
-  const payload = getTokenPayload(token);
-  const expiresAt = payload?.exp ? payload.exp * 1000 : 0;
-
-  return Boolean(payload?.role === "teacher" && expiresAt > Date.now());
 }
 
 function requireTeacherSession() {
@@ -107,11 +105,11 @@ async function fetchTeacherApi(path, options = {}) {
       return null;
     }
 
-    throw new Error(data.error || "Nao foi possivel validar sua sessao. Tente novamente.");
+    throw new Error(data.error || "Não foi possível validar sua sessão. Tente novamente.");
   }
 
   if (response.status === 403) {
-    throw new Error("Sua conta nao tem permissao para acessar este recurso.");
+    throw new Error("Sua conta não tem permissão para acessar este recurso.");
   }
 
   if (!response.ok) {
@@ -142,11 +140,89 @@ function formatDate(value) {
     return value;
   }
 
-  return date.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
+  return date.toLocaleDateString("pt-BR");
+}
+
+function getAllowedSources(type) {
+  if (type === "document") {
+    return ["link", "file"];
+  }
+
+  if (["pdf", "video", "audio"].includes(type)) {
+    return ["file"];
+  }
+
+  return ["link"];
+}
+
+function renderSelectedFile() {
+  const fileInfo = state.selectedFile
+    ? {
+        name: state.selectedFile.name,
+        size: state.selectedFile.size,
+      }
+    : state.existingFile;
+
+  selectedFilePanel.hidden = !fileInfo;
+
+  if (!fileInfo) {
+    selectedFileName.textContent = "";
+    selectedFileSize.textContent = "";
+    materialFileInput.value = "";
+    return;
+  }
+
+  selectedFileName.textContent = fileInfo.name;
+  selectedFileSize.textContent = window.EnglishStudioFiles.formatFileSize(fileInfo.size);
+}
+
+function setSourceMode(source, { preserveFile = false } = {}) {
+  const type = materialTypeSelect.value;
+  const allowedSources = getAllowedSources(type);
+  state.sourceMode = allowedSources.includes(source) ? source : allowedSources[0];
+  const usesFile = state.sourceMode === "file";
+
+  materialSourceToggle.hidden = allowedSources.length < 2;
+  materialSourceButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.materialSource === state.sourceMode);
   });
+
+  materialUrlField.hidden = usesFile;
+  materialFileField.hidden = !usesFile;
+  materialUrlInput.required = !usesFile;
+
+  if (usesFile) {
+    const rule = window.EnglishStudioFiles.getRule(type);
+    materialFileInput.accept = rule?.accept || "";
+    materialFileHelp.textContent = rule?.help || "";
+    materialUrlInput.value = "";
+  } else if (!preserveFile) {
+    state.selectedFile = null;
+    state.existingFile = null;
+  }
+
+  renderSelectedFile();
+}
+
+function syncMaterialType({ preserveExisting = false } = {}) {
+  const allowedSources = getAllowedSources(materialTypeSelect.value);
+  const existingTypeMatches = state.existingFile
+    && (
+      state.existingFile.materialType === materialTypeSelect.value
+      || ["docs", "document"].includes(state.existingFile.materialType)
+        && materialTypeSelect.value === "document"
+    );
+
+  if (!preserveExisting || !existingTypeMatches) {
+    state.selectedFile = null;
+    state.existingFile = null;
+  }
+
+  setSourceMode(
+    preserveExisting && existingTypeMatches ? "file" : allowedSources[0],
+    { preserveFile: preserveExisting && existingTypeMatches }
+  );
+  setMaterialMessage("");
 }
 
 function renderStudentOptions() {
@@ -165,22 +241,16 @@ function renderStudentOptions() {
 }
 
 function getVisibleMaterials() {
-  const selectedStudentId = filterStudent.value;
-
-  if (!selectedStudentId) {
-    return state.materials;
-  }
-
-  return state.materials.filter((material) => material.student_id === selectedStudentId);
+  return filterStudent.value
+    ? state.materials.filter((material) => material.student_id === filterStudent.value)
+    : state.materials;
 }
 
 function renderMaterials() {
   const materials = getVisibleMaterials();
 
   if (!materials.length) {
-    materialList.innerHTML = `
-      <p class="materials-empty">Nenhum material enviado para este filtro.</p>
-    `;
+    materialList.innerHTML = '<p class="materials-empty">Nenhum material enviado para este filtro.</p>';
     return;
   }
 
@@ -198,12 +268,18 @@ function renderMaterials() {
           </div>
           <div class="teacher-material-card__meta">
             <span>Aluno: <strong>${escapeHtml(material.student_name)}</strong></span>
-            <span>Tipo: <strong>${materialTypes[material.type] || "Material"}</strong></span>
+            <span>${
+              material.file_id
+                ? `Arquivo: <strong>${escapeHtml(material.file_name)}</strong>`
+                : `Tipo: <strong>${materialTypes[material.type] || "Material"}</strong>`
+            }</span>
           </div>
           <div class="teacher-material-card__actions">
-            <a class="material-link" href="${escapeHtml(material.url)}" target="_blank" rel="noreferrer">
-              Abrir material
-            </a>
+            ${
+              material.file_id
+                ? `<button class="material-link" type="button" data-open-file="${material.file_id}">Abrir arquivo</button>`
+                : `<a class="material-link" href="${escapeHtml(material.url)}" target="_blank" rel="noreferrer">Abrir material</a>`
+            }
             <button class="secondary-button" type="button" data-edit-material="${material.id}">Editar</button>
             <button class="danger-button" type="button" data-delete-material="${material.id}">Excluir</button>
           </div>
@@ -211,6 +287,16 @@ function renderMaterials() {
       `
     )
     .join("");
+
+  materialList.querySelectorAll("[data-open-file]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      try {
+        await window.EnglishStudioFiles.openFile(button.dataset.openFile, getAdminToken());
+      } catch (error) {
+        setMaterialMessage(error.message, "error");
+      }
+    });
+  });
 
   materialList.querySelectorAll("[data-edit-material]").forEach((button) => {
     button.addEventListener("click", () => startEditingMaterial(button.dataset.editMaterial));
@@ -223,10 +309,14 @@ function renderMaterials() {
 
 function resetForm() {
   state.editingId = null;
+  state.selectedFile = null;
+  state.existingFile = null;
   materialForm.reset();
   formTitle.textContent = "Enviar material";
   submitButton.textContent = "Enviar material";
+  submitButton.disabled = false;
   cancelEditButton.hidden = true;
+  syncMaterialType();
 }
 
 function startEditingMaterial(materialId) {
@@ -237,11 +327,27 @@ function startEditingMaterial(materialId) {
   }
 
   state.editingId = material.id;
+  state.selectedFile = null;
+  state.existingFile = material.file_id
+    ? {
+        id: material.file_id,
+        name: material.file_name,
+        size: Number(material.size_bytes) || 0,
+        materialType: material.type,
+      }
+    : null;
   materialForm.elements.student_id.value = material.student_id;
   materialForm.elements.title.value = material.title;
   materialForm.elements.description.value = material.description || "";
   materialForm.elements.type.value = material.type;
-  materialForm.elements.url.value = material.url;
+  materialForm.elements.url.value = material.url || "";
+  syncMaterialType({ preserveExisting: true });
+
+  if (!material.file_id) {
+    setSourceMode("link");
+    materialForm.elements.url.value = material.url || "";
+  }
+
   formTitle.textContent = "Editar material";
   submitButton.textContent = "Salvar alterações";
   cancelEditButton.hidden = false;
@@ -249,15 +355,14 @@ function startEditingMaterial(materialId) {
   materialForm.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function getFormPayload() {
+function getBasePayload() {
   const formData = new FormData(materialForm);
 
   return {
     student_id: formData.get("student_id"),
-    title: formData.get("title"),
-    description: formData.get("description"),
+    title: String(formData.get("title") || "").trim(),
+    description: String(formData.get("description") || "").trim(),
     type: formData.get("type"),
-    url: formData.get("url"),
   };
 }
 
@@ -268,11 +373,54 @@ async function saveMaterial(event) {
     return;
   }
 
-  const payload = getFormPayload();
-  const path = state.editingId ? `/teacher/materials/${state.editingId}` : "/teacher/materials";
-  const method = state.editingId ? "PATCH" : "POST";
+  const payload = getBasePayload();
+  const token = getAdminToken();
+  let newUploadId = null;
+
+  if (!payload.title) {
+    materialForm.elements.title.focus();
+    setMaterialMessage("Informe o título do material.", "error");
+    return;
+  }
 
   try {
+    submitButton.disabled = true;
+
+    if (state.sourceMode === "file") {
+      if (state.selectedFile) {
+        submitButton.textContent = "Enviando arquivo...";
+        const uploadedFile = await window.EnglishStudioFiles.uploadFile(
+          state.selectedFile,
+          payload.type,
+          token
+        );
+        newUploadId = uploadedFile.file_id;
+        payload.uploaded_file_id = newUploadId;
+      } else if (state.existingFile) {
+        payload.uploaded_file_id = state.existingFile.id;
+      } else {
+        throw new Error("Selecione um arquivo para enviar.");
+      }
+    } else {
+      const url = materialUrlInput.value.trim();
+
+      try {
+        const parsedUrl = new URL(url);
+
+        if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+          throw new Error();
+        }
+      } catch (error) {
+        materialUrlInput.focus();
+        throw new Error("Informe uma URL válida iniciada por http:// ou https://.");
+      }
+
+      payload.url = url;
+    }
+
+    submitButton.textContent = state.editingId ? "Salvando..." : "Enviando...";
+    const path = state.editingId ? `/teacher/materials/${state.editingId}` : "/teacher/materials";
+    const method = state.editingId ? "PATCH" : "POST";
     const material = await fetchTeacherApi(path, {
       method,
       body: JSON.stringify(payload),
@@ -280,17 +428,25 @@ async function saveMaterial(event) {
 
     if (state.editingId) {
       state.materials = state.materials.map((item) => (item.id === material.id ? material : item));
+      resetForm();
       setMaterialMessage("Material atualizado com sucesso.", "success");
     } else {
       state.materials = [material, ...state.materials];
-      setMaterialMessage("Material enviado com sucesso.", "success");
+      resetForm();
+      setMaterialMessage("Arquivo anexado e material enviado com sucesso.", "success");
     }
 
-    resetForm();
     renderMaterials();
   } catch (error) {
+    if (newUploadId) {
+      await window.EnglishStudioFiles.cancelUpload(newUploadId, token).catch(() => {});
+    }
+
     console.error("Erro ao salvar material:", error);
     setMaterialMessage(error.message, "error");
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = state.editingId ? "Salvar alterações" : "Enviar material";
   }
 }
 
@@ -326,6 +482,7 @@ async function loadMaterials() {
 
 async function init() {
   materialList.innerHTML = '<p class="materials-empty">Carregando materiais...</p>';
+  syncMaterialType();
 
   try {
     await Promise.all([loadStudents(), loadMaterials()]);
@@ -337,6 +494,32 @@ async function init() {
 }
 
 materialForm.addEventListener("submit", saveMaterial);
+materialTypeSelect.addEventListener("change", () => syncMaterialType());
+materialSourceButtons.forEach((button) => {
+  button.addEventListener("click", () => setSourceMode(button.dataset.materialSource));
+});
+
+materialFileInput.addEventListener("change", () => {
+  const [file] = materialFileInput.files;
+
+  try {
+    state.selectedFile = window.EnglishStudioFiles.validateFile(file, materialTypeSelect.value);
+    state.existingFile = null;
+    renderSelectedFile();
+    setMaterialMessage("Arquivo selecionado e pronto para envio.", "success");
+  } catch (error) {
+    state.selectedFile = null;
+    renderSelectedFile();
+    setMaterialMessage(error.message, "error");
+  }
+});
+
+removeSelectedFileButton.addEventListener("click", () => {
+  state.selectedFile = null;
+  state.existingFile = null;
+  renderSelectedFile();
+  setMaterialMessage("Arquivo removido.");
+});
 
 cancelEditButton.addEventListener("click", () => {
   resetForm();
@@ -344,7 +527,6 @@ cancelEditButton.addEventListener("click", () => {
 });
 
 filterStudent.addEventListener("change", renderMaterials);
-
 adminLogoutButton.addEventListener("click", () => {
   window.EnglishStudioAuth?.logout("teacher");
 });

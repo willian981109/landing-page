@@ -70,7 +70,7 @@
 
           <label class="field">
             <span>Tipo do material</span>
-            <select name="type" required>
+            <select name="type" data-material-type required>
               <option value="pdf">PDF</option>
               <option value="video">Vídeo</option>
               <option value="link">Link</option>
@@ -81,10 +81,31 @@
             </select>
           </label>
 
-          <label class="field">
+          <div class="material-source-toggle" data-material-source-toggle hidden>
+            <button class="active" type="button" data-material-source="link">Link Google Docs</button>
+            <button type="button" data-material-source="file">Enviar arquivo</button>
+          </div>
+
+          <label class="field" data-material-url-field>
             <span>Link do material</span>
-            <input type="url" name="url" placeholder="https://..." required />
+            <input type="url" name="url" placeholder="https://..." />
           </label>
+
+          <div class="field" data-material-file-field hidden>
+            <span>Arquivo do material</span>
+            <label class="file-picker">
+              <input type="file" data-material-file />
+              <span>Escolher arquivo</span>
+            </label>
+            <small class="field-status" data-material-file-help></small>
+            <div class="selected-file" data-selected-file hidden>
+              <span>
+                <strong data-selected-file-name></strong>
+                <small data-selected-file-size></small>
+              </span>
+              <button type="button" data-remove-selected-file>Remover</button>
+            </div>
+          </div>
 
           <div class="material-form__actions">
             <button class="publish-button" type="submit" data-submit-material>Enviar material</button>
@@ -115,6 +136,7 @@
     </main>
 
     <script src="js/auth-session.js" defer></script>
+    <script src="js/material-files.js" defer></script>
     <script src="js/teacher-materials.js" defer></script>
   </body>
 </html>

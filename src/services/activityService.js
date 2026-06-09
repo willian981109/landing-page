@@ -1,5 +1,6 @@
 const activityModel = require("../models/activityModel");
 const studentModel = require("../models/studentModel");
+const uploadedFileService = require("./uploadedFileService");
 
 const VALID_MATERIAL_TYPES = ["link", "pdf", "audio", "docs", "video"];
 const VALID_ACTIVITY_STATUSES = ["pending", "in_progress", "completed", "reviewed"];
@@ -61,12 +62,30 @@ function validateActivityInput(
         throw createActivityError(`materials[${index}].type must be link, pdf, audio, docs or video`);
       }
 
-      if (!String(material.title || "").trim() || !String(material.url || "").trim()) {
-        throw createActivityError(`materials[${index}] title and url are required`);
+      const title = String(material.title || "").trim();
+      const url = String(material.url || "").trim();
+      const uploadedFileId = material.uploaded_file_id ?? material.uploadedFileId;
+
+      if (!title) {
+        throw createActivityError(`materials[${index}].title is required`);
       }
 
-      if (!isHttpUrl(String(material.url || "").trim())) {
+      if (Boolean(url) === Boolean(uploadedFileId)) {
+        throw createActivityError(
+          `materials[${index}] must contain either url or uploaded_file_id`
+        );
+      }
+
+      if (url && !isHttpUrl(url)) {
         throw createActivityError(`materials[${index}].url must be a valid http or https link`);
+      }
+
+      if (uploadedFileId && !isUuid(uploadedFileId)) {
+        throw createActivityError(`materials[${index}].uploaded_file_id must be a valid id`);
+      }
+
+      if (material.type === "link" && uploadedFileId) {
+        throw createActivityError(`materials[${index}] link materials cannot contain a file`);
       }
     });
   }
@@ -87,6 +106,18 @@ async function createActivity(payload) {
     throw createActivityError("Student not found", 404);
   }
 
+  for (const material of normalizedPayload.materials) {
+    const uploadedFileId = material.uploaded_file_id ?? material.uploadedFileId;
+
+    if (uploadedFileId) {
+      await uploadedFileService.assertUploadedFileReady(
+        uploadedFileId,
+        normalizedPayload.teacher_id,
+        material.type
+      );
+    }
+  }
+
   return activityModel.createActivity({
     title: normalizedPayload.title,
     description: normalizedPayload.description,
@@ -97,7 +128,8 @@ async function createActivity(payload) {
     materials: normalizedPayload.materials.map((material) => ({
       type: material.type,
       title: String(material.title).trim(),
-      url: String(material.url).trim(),
+      url: String(material.url || "").trim() || null,
+      uploaded_file_id: material.uploaded_file_id ?? material.uploadedFileId ?? null,
     })),
   });
 }
@@ -258,11 +290,14 @@ async function deleteActivity(id, teacherId) {
     throw createActivityError("activity_id and teacher_id must be valid ids");
   }
 
+  const files = await activityModel.findActivityUploadedFiles(id, teacherId);
   const activity = await activityModel.deleteActivity(id, teacherId);
 
   if (!activity) {
     throw createActivityError("Activity not found", 404);
   }
+
+  await Promise.all(files.map((file) => uploadedFileService.removeDetachedUploadedFile(file)));
 
   return activity;
 }

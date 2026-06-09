@@ -628,9 +628,13 @@ h3 {
   color: var(--muted);
 }
 
-.material-item a {
+.material-item a,
+.material-item button {
+  background: transparent;
   border: 1px solid var(--gold);
   color: var(--green-900);
+  cursor: pointer;
+  font-family: inherit;
   font-size: 0.72rem;
   font-weight: 800;
   justify-self: end;
@@ -722,7 +726,8 @@ h3 {
     grid-template-columns: auto 1fr;
   }
 
-  .material-item a {
+  .material-item a,
+  .material-item button {
     grid-column: 1 / -1;
     justify-self: stretch;
     text-align: center;
@@ -778,6 +783,7 @@ body {
 .detail-grid article,
 .material-item,
 .material-item a,
+.material-item button,
 .correction-box,
 .publish-button,
 input,

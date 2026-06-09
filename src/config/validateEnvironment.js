@@ -68,6 +68,23 @@ function validateEnvironment(env = process.env, { strict = env.NODE_ENV === "pro
     if (String(env.DB_SSL || "").toLowerCase() !== "true") {
       warnings.push("DB_SSL is not enabled. Enable it if your production PostgreSQL requires encrypted connections.");
     }
+
+    const hasSupabaseUrl = Boolean(String(env.SUPABASE_URL || "").trim());
+    const hasSupabaseServiceKey = Boolean(String(env.SUPABASE_SERVICE_ROLE_KEY || "").trim());
+
+    if (hasSupabaseUrl || hasSupabaseServiceKey) {
+      if (!isHttpUrl(env.SUPABASE_URL) || !String(env.SUPABASE_URL).startsWith("https://")) {
+        issues.push("SUPABASE_URL must be configured with the project HTTPS URL.");
+      }
+
+      if (!hasSupabaseServiceKey) {
+        issues.push("SUPABASE_SERVICE_ROLE_KEY must be configured for private file storage.");
+      }
+    } else {
+      warnings.push(
+        "Supabase Storage is not configured. File uploads will remain unavailable until SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set."
+      );
+    }
   }
 
   if (strict && issues.length) {

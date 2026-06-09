@@ -6,6 +6,7 @@ const healthRoutes = require("./healthRoutes");
 const scheduleRoutes = require("./scheduleRoutes");
 const studentRoutes = require("./studentRoutes");
 const studyMaterialRoutes = require("./studyMaterialRoutes");
+const uploadedFileRoutes = require("./uploadedFileRoutes");
 
 const router = Router();
 
@@ -15,5 +16,6 @@ router.use(healthRoutes);
 router.use(scheduleRoutes);
 router.use(studentRoutes);
 router.use(studyMaterialRoutes);
+router.use(uploadedFileRoutes);
 
 module.exports = router;

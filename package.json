@@ -14,9 +14,11 @@
     "seed:admin": "node scripts/seedAdmin.js",
     "seed:admin:production": "node scripts/seedAdmin.js --production --env-path=.env.production",
     "test:admin-flow": "node scripts/testAdminFlow.js",
-    "test:security": "node scripts/testSecurityFlow.js"
+    "test:security": "node scripts/testSecurityFlow.js",
+    "test:uploads": "node scripts/testUploadFlow.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.108.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

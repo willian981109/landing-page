@@ -51,7 +51,7 @@ function updatePasswordStrength() {
 
   passwordStrength.dataset.score = String(score);
   passwordStrengthBar.style.width = `${(score / 5) * 100}%`;
-  passwordStrengthLabel.textContent = score === 5 ? "Senha segura." : `Forca da senha: ${labels[score]}`;
+  passwordStrengthLabel.textContent = score === 5 ? "Senha segura." : `Força da senha: ${labels[score]}`;
 
   passwordRuleItems.forEach((item) => {
     item.classList.toggle("is-valid", Boolean(rules[item.dataset.passwordRule]));
@@ -68,7 +68,7 @@ function validateEmailInput(input) {
   input.value = normalizeEmail(input.value);
 
   if (!isEmailValid(input.value)) {
-    input.setCustomValidity("Informe um e-mail valido.");
+    input.setCustomValidity("Informe um e-mail válido.");
     return false;
   }
 

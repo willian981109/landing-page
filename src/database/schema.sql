@@ -80,14 +80,37 @@ ALTER TABLE activity_students
   ADD CONSTRAINT activity_students_teacher_grade_check
   CHECK (teacher_grade IS NULL OR teacher_grade BETWEEN 0 AND 100);
 
+CREATE TABLE IF NOT EXISTS uploaded_files (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  storage_bucket VARCHAR(120) NOT NULL,
+  storage_path TEXT NOT NULL UNIQUE,
+  original_name VARCHAR(255) NOT NULL,
+  mime_type VARCHAR(160) NOT NULL,
+  size_bytes BIGINT NOT NULL CHECK (size_bytes > 0),
+  material_type VARCHAR(30) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  attached_at TIMESTAMP WITH TIME ZONE,
+  CHECK (material_type IN ('pdf', 'audio', 'docs', 'document', 'video')),
+  CHECK (status IN ('pending', 'attached'))
+);
+
 CREATE TABLE IF NOT EXISTS activity_materials (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   activity_id UUID NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
   type VARCHAR(30) NOT NULL CHECK (type IN ('link', 'pdf', 'audio', 'docs', 'video')),
   title VARCHAR(180) NOT NULL,
-  url TEXT NOT NULL CHECK (url ~* '^https?://'),
+  url TEXT CHECK (url IS NULL OR url ~* '^https?://'),
+  uploaded_file_id UUID UNIQUE REFERENCES uploaded_files(id),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE activity_materials
+  ADD COLUMN IF NOT EXISTS uploaded_file_id UUID REFERENCES uploaded_files(id);
+
+ALTER TABLE activity_materials
+  ALTER COLUMN url DROP NOT NULL;
 
 ALTER TABLE activity_materials
   DROP CONSTRAINT IF EXISTS activity_materials_type_check;
@@ -96,12 +119,26 @@ ALTER TABLE activity_materials
   DROP CONSTRAINT IF EXISTS activity_materials_url_http_check;
 
 ALTER TABLE activity_materials
+  DROP CONSTRAINT IF EXISTS activity_materials_source_check;
+
+ALTER TABLE activity_materials
   ADD CONSTRAINT activity_materials_type_check
   CHECK (type IN ('link', 'pdf', 'audio', 'docs', 'video'));
 
 ALTER TABLE activity_materials
   ADD CONSTRAINT activity_materials_url_http_check
-  CHECK (url ~* '^https?://');
+  CHECK (url IS NULL OR url ~* '^https?://');
+
+ALTER TABLE activity_materials
+  ADD CONSTRAINT activity_materials_source_check
+  CHECK (
+    (url IS NOT NULL AND uploaded_file_id IS NULL)
+    OR (url IS NULL AND uploaded_file_id IS NOT NULL)
+  );
+
+CREATE UNIQUE INDEX IF NOT EXISTS activity_materials_uploaded_file_idx
+  ON activity_materials (uploaded_file_id)
+  WHERE uploaded_file_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS student_feedback_profiles (
   student_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -124,18 +161,42 @@ CREATE TABLE IF NOT EXISTS study_materials (
   title VARCHAR(180) NOT NULL,
   description TEXT,
   type VARCHAR(30) NOT NULL,
-  url TEXT NOT NULL CHECK (url ~* '^https?://'),
+  url TEXT CHECK (url IS NULL OR url ~* '^https?://'),
+  uploaded_file_id UUID UNIQUE REFERENCES uploaded_files(id),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   CHECK (type IN ('pdf', 'video', 'link', 'exercise', 'audio', 'document', 'vocabulary'))
 );
 
 ALTER TABLE study_materials
+  ADD COLUMN IF NOT EXISTS uploaded_file_id UUID REFERENCES uploaded_files(id);
+
+ALTER TABLE study_materials
+  ALTER COLUMN url DROP NOT NULL;
+
+ALTER TABLE study_materials
   DROP CONSTRAINT IF EXISTS study_materials_url_http_check;
 
 ALTER TABLE study_materials
+  DROP CONSTRAINT IF EXISTS study_materials_source_check;
+
+ALTER TABLE study_materials
   ADD CONSTRAINT study_materials_url_http_check
-  CHECK (url ~* '^https?://');
+  CHECK (url IS NULL OR url ~* '^https?://');
+
+ALTER TABLE study_materials
+  ADD CONSTRAINT study_materials_source_check
+  CHECK (
+    (url IS NOT NULL AND uploaded_file_id IS NULL)
+    OR (url IS NULL AND uploaded_file_id IS NOT NULL)
+  );
+
+CREATE UNIQUE INDEX IF NOT EXISTS study_materials_uploaded_file_idx
+  ON study_materials (uploaded_file_id)
+  WHERE uploaded_file_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS uploaded_files_teacher_status_idx
+  ON uploaded_files (teacher_id, status, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS study_materials_student_idx
   ON study_materials (student_id, created_at DESC);

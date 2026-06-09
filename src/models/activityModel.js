@@ -51,16 +51,45 @@ async function createActivity({
     activity.materials = [];
 
     for (const material of materials) {
+      if (material.uploaded_file_id) {
+        const claimedFile = await client.query(
+          `
+            UPDATE uploaded_files
+            SET status = 'attached', attached_at = NOW()
+            WHERE id = $1
+              AND teacher_id = $2
+              AND status = 'pending'
+            RETURNING id
+          `,
+          [material.uploaded_file_id, teacher_id]
+        );
+
+        if (claimedFile.rowCount === 0) {
+          const error = new Error("Uploaded file is no longer available");
+          error.statusCode = 409;
+          throw error;
+        }
+      }
+
       const materialResult = await client.query(
         `
-          INSERT INTO activity_materials (activity_id, type, title, url)
-          VALUES ($1, $2, $3, $4)
-          RETURNING id, activity_id, type, title, url, created_at
+          INSERT INTO activity_materials (activity_id, type, title, url, uploaded_file_id)
+          VALUES ($1, $2, $3, $4, $5)
+          RETURNING id, activity_id, type, title, url, uploaded_file_id, created_at
         `,
-        [activity.id, material.type, material.title, material.url]
+        [
+          activity.id,
+          material.type,
+          material.title,
+          material.url,
+          material.uploaded_file_id,
+        ]
       );
 
-      activity.materials.push(materialResult.rows[0]);
+      activity.materials.push({
+        ...materialResult.rows[0],
+        file_id: material.uploaded_file_id || null,
+      });
     }
 
     await client.query("COMMIT");
@@ -115,11 +144,16 @@ async function findAllActivities(teacherId) {
                 'type', am.type,
                 'title', am.title,
                 'url', am.url,
+                'file_id', uf.id,
+                'file_name', uf.original_name,
+                'mime_type', uf.mime_type,
+                'size_bytes', uf.size_bytes,
                 'created_at', am.created_at
               )
               ORDER BY am.created_at ASC
             )
             FROM activity_materials am
+            LEFT JOIN uploaded_files uf ON uf.id = am.uploaded_file_id
             WHERE am.activity_id = a.id
           ),
           '[]'
@@ -159,11 +193,16 @@ async function findActivitiesByStudent(studentId) {
                 'type', am.type,
                 'title', am.title,
                 'url', am.url,
+                'file_id', uf.id,
+                'file_name', uf.original_name,
+                'mime_type', uf.mime_type,
+                'size_bytes', uf.size_bytes,
                 'created_at', am.created_at
               )
               ORDER BY am.created_at ASC
             )
             FROM activity_materials am
+            LEFT JOIN uploaded_files uf ON uf.id = am.uploaded_file_id
             WHERE am.activity_id = a.id
           ),
           '[]'
@@ -204,11 +243,16 @@ async function findActivityByStudent(activityId, studentId) {
                 'type', am.type,
                 'title', am.title,
                 'url', am.url,
+                'file_id', uf.id,
+                'file_name', uf.original_name,
+                'mime_type', uf.mime_type,
+                'size_bytes', uf.size_bytes,
                 'created_at', am.created_at
               )
               ORDER BY am.created_at ASC
             )
             FROM activity_materials am
+            LEFT JOIN uploaded_files uf ON uf.id = am.uploaded_file_id
             WHERE am.activity_id = a.id
           ),
           '[]'
@@ -287,11 +331,16 @@ async function findTeacherActivityAssignments(teacherId, studentId = null) {
                 'type', am.type,
                 'title', am.title,
                 'url', am.url,
+                'file_id', uf.id,
+                'file_name', uf.original_name,
+                'mime_type', uf.mime_type,
+                'size_bytes', uf.size_bytes,
                 'created_at', am.created_at
               )
               ORDER BY am.created_at ASC
             )
             FROM activity_materials am
+            LEFT JOIN uploaded_files uf ON uf.id = am.uploaded_file_id
             WHERE am.activity_id = a.id
           ),
           '[]'
@@ -346,11 +395,16 @@ async function findTeacherActivityAssignmentById(assignmentId, teacherId) {
                 'type', am.type,
                 'title', am.title,
                 'url', am.url,
+                'file_id', uf.id,
+                'file_name', uf.original_name,
+                'mime_type', uf.mime_type,
+                'size_bytes', uf.size_bytes,
                 'created_at', am.created_at
               )
               ORDER BY am.created_at ASC
             )
             FROM activity_materials am
+            LEFT JOIN uploaded_files uf ON uf.id = am.uploaded_file_id
             WHERE am.activity_id = a.id
           ),
           '[]'
@@ -434,6 +488,22 @@ async function deleteActivity(id, teacherId) {
   return result.rows[0];
 }
 
+async function findActivityUploadedFiles(id, teacherId) {
+  const result = await pool.query(
+    `
+      SELECT uf.*
+      FROM activities a
+      INNER JOIN activity_materials am ON am.activity_id = a.id
+      INNER JOIN uploaded_files uf ON uf.id = am.uploaded_file_id
+      WHERE a.id = $1
+        AND a.teacher_id = $2
+    `,
+    [id, teacherId]
+  );
+
+  return result.rows;
+}
+
 module.exports = {
   createActivity,
   findAllActivities,
@@ -445,4 +515,5 @@ module.exports = {
   reviewTeacherActivityAssignment,
   updateActivity,
   deleteActivity,
+  findActivityUploadedFiles,
 };

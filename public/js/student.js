@@ -374,11 +374,41 @@ function renderMaterials() {
           <span class="type-chip">${getMaterialLabel(material.type)}</span>
           <h3>${escapeHtml(material.title)}</h3>
           <p>${escapeHtml(material.description || "Material de apoio enviado pela professora.")}</p>
-          <a href="${escapeHtml(material.url)}" target="_blank" rel="noreferrer">Abrir material</a>
+          ${
+            material.file_id
+              ? `<button class="material-card__action" type="button" data-open-file="${material.file_id}">Abrir arquivo</button>`
+              : `<a href="${escapeHtml(material.url)}" target="_blank" rel="noreferrer">Abrir material</a>`
+          }
         </article>
       `
     )
     .join("");
+
+  setupFileButtons(container);
+}
+
+function setupFileButtons(container) {
+  container.querySelectorAll("[data-open-file]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const originalLabel = button.textContent;
+      button.disabled = true;
+      button.textContent = "Abrindo...";
+
+      try {
+        await window.EnglishStudioFiles.openFile(button.dataset.openFile, getStudentToken());
+      } catch (error) {
+        console.error("Erro ao abrir arquivo:", error);
+        button.textContent = "Tentar novamente";
+        button.title = error.message;
+        window.setTimeout(() => {
+          button.textContent = originalLabel;
+          button.title = "";
+        }, 2600);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
 }
 
 async function loadMaterials() {
@@ -470,11 +500,13 @@ function renderActivityMaterials(materials = []) {
               </span>
               <div class="attachment-item__content">
                 <strong>${escapeHtml(material.title)}</strong>
-                <span>${getMaterialLabel(material.type)}</span>
+                <span>${escapeHtml(material.file_name || getMaterialLabel(material.type))}</span>
               </div>
-              <a class="attachment-item__action" href="${escapeHtml(material.url)}" target="_blank" rel="noreferrer">
-                Acessar
-              </a>
+              ${
+                material.file_id
+                  ? `<button class="attachment-item__action" type="button" data-open-file="${material.file_id}">Acessar</button>`
+                  : `<a class="attachment-item__action" href="${escapeHtml(material.url)}" target="_blank" rel="noreferrer">Acessar</a>`
+              }
             </article>
           `
         )
@@ -613,6 +645,8 @@ function renderTasks() {
       completeActivity(button.dataset.completeActivity);
     });
   });
+
+  setupFileButtons(container);
 }
 
 async function loadActivities() {

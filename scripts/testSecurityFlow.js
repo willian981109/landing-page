@@ -139,6 +139,28 @@ async function testSecurityFlow() {
     await expectStatus("/my-materials", 403, {
       headers: authHeaders(adminToken),
     });
+    await expectStatus("/uploads/sign", 401, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+    await expectStatus("/uploads/sign", 403, {
+      method: "POST",
+      headers: authHeaders(studentOneLogin.token),
+      body: JSON.stringify({}),
+    });
+    await expectStatus("/uploads/sign", 400, {
+      method: "POST",
+      headers: authHeaders(adminToken),
+      body: JSON.stringify({
+        material_type: "pdf",
+        file_name: "malicious.exe",
+        mime_type: "application/octet-stream",
+        size_bytes: 100,
+      }),
+    });
+    await expectStatus("/files/00000000-0000-4000-8000-000000000000/access", 404, {
+      headers: authHeaders(studentOneLogin.token),
+    });
     await expectStatus("/activities?studentId=not-a-uuid", 400, {
       headers: authHeaders(adminToken),
     });
