@@ -41,7 +41,7 @@ const FILE_RULES = {
   },
   video: {
     extensions: [".mp4", ".mov", ".webm", ".avi"],
-    maxSize: 200 * MEGABYTE,
+    maxSize: 50 * MEGABYTE,
     mimeTypes: {
       ".mp4": "video/mp4",
       ".mov": "video/quicktime",

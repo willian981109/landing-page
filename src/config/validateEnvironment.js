@@ -29,6 +29,29 @@ function hasDatabaseConfig(env) {
   );
 }
 
+function getSupabaseKeyRole(value) {
+  const key = String(value || "").trim();
+
+  if (!key) {
+    return "missing";
+  }
+
+  if (key.startsWith("sb_secret_")) {
+    return "secret";
+  }
+
+  if (key.startsWith("sb_publishable_")) {
+    return "publishable";
+  }
+
+  try {
+    const payload = JSON.parse(Buffer.from(key.split(".")[1], "base64url").toString("utf8"));
+    return payload.role || "unknown";
+  } catch (error) {
+    return "unknown";
+  }
+}
+
 function validateEnvironment(env = process.env, { strict = env.NODE_ENV === "production" } = {}) {
   const issues = [];
   const warnings = [];
@@ -70,7 +93,8 @@ function validateEnvironment(env = process.env, { strict = env.NODE_ENV === "pro
     }
 
     const hasSupabaseUrl = Boolean(String(env.SUPABASE_URL || "").trim());
-    const hasSupabaseServiceKey = Boolean(String(env.SUPABASE_SERVICE_ROLE_KEY || "").trim());
+    const supabaseServerKey = env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
+    const hasSupabaseServiceKey = Boolean(String(supabaseServerKey || "").trim());
 
     if (hasSupabaseUrl || hasSupabaseServiceKey) {
       if (!isHttpUrl(env.SUPABASE_URL) || !String(env.SUPABASE_URL).startsWith("https://")) {
@@ -78,7 +102,13 @@ function validateEnvironment(env = process.env, { strict = env.NODE_ENV === "pro
       }
 
       if (!hasSupabaseServiceKey) {
-        issues.push("SUPABASE_SERVICE_ROLE_KEY must be configured for private file storage.");
+        issues.push(
+          "SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY must be configured for private file storage."
+        );
+      } else if (!["secret", "service_role"].includes(getSupabaseKeyRole(supabaseServerKey))) {
+        issues.push(
+          "The Supabase server key must be a secret key (sb_secret_...) or legacy service_role key, never anon/publishable."
+        );
       }
     } else {
       warnings.push(
@@ -102,5 +132,6 @@ function validateEnvironment(env = process.env, { strict = env.NODE_ENV === "pro
 }
 
 module.exports = {
+  getSupabaseKeyRole,
   validateEnvironment,
 };

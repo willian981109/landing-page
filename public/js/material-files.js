@@ -27,8 +27,8 @@
     video: {
       accept: ".mp4,.mov,.webm,.avi,video/*",
       extensions: [".mp4", ".mov", ".webm", ".avi"],
-      maxSize: 200 * 1024 * 1024,
-      help: "Arquivo MP4, MOV, WEBM ou AVI de até 200 MB.",
+      maxSize: 50 * 1024 * 1024,
+      help: "Arquivo MP4, MOV, WEBM ou AVI de até 50 MB.",
     },
   };
 

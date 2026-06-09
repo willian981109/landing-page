@@ -19,7 +19,7 @@ function errorHandler(error, req, res, next) {
   }
 
   return res.status(statusCode).json({
-    error: isServerError ? "Internal server error" : error.message,
+    error: isServerError && !error.expose ? "Internal server error" : error.message,
     code: error.code || (isServerError ? "INTERNAL_ERROR" : "REQUEST_ERROR"),
     ...(Array.isArray(error.details) && error.details.length ? { details: error.details } : {}),
   });
