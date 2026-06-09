@@ -21,6 +21,7 @@ function getSafeStorageErrorDetails(error) {
     message: String(error?.message || "Unknown Supabase Storage error"),
     status: error?.status || error?.statusCode || null,
     code: error?.code || null,
+    cause: String(error?.cause?.message || error?.originalError?.cause?.message || "") || null,
   };
 }
 
@@ -74,8 +75,22 @@ async function ensurePrivateBucket() {
       }
 
       const statusCode = Number(error?.statusCode || error?.status);
+      const errorMessage = String(error?.message || "").toLowerCase();
+      const isNetworkFailure =
+        !statusCode ||
+        errorMessage.includes("fetch failed") ||
+        errorMessage.includes("network");
 
-      if (statusCode && statusCode !== 404) {
+      if (isNetworkFailure) {
+        logStorageFailure("getBucket", error);
+        throw createStorageError(
+          "Não foi possível conectar ao Supabase Storage. Verifique se SUPABASE_URL contém a URL real do projeto e se o serviço consegue acessar a internet.",
+          503,
+          "STORAGE_CONNECTION_FAILED"
+        );
+      }
+
+      if (statusCode !== 404) {
         logStorageFailure("getBucket", error);
         throw createStorageError(
           "Não foi possível acessar o Supabase Storage. Verifique a URL e a chave secreta configuradas no servidor.",

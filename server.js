@@ -22,7 +22,10 @@ async function startServer() {
       console.log(`Server running on port ${PORT}`);
     });
   } catch (error) {
-    console.error("Could not connect to PostgreSQL");
+    console.error("Could not start the server");
+    error.issues?.forEach((issue) => {
+      console.error(`Environment issue: ${issue}`);
+    });
     console.error(error.message);
     process.exit(1);
   }

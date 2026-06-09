@@ -4,6 +4,13 @@ const PLACEHOLDER_VALUES = new Set([
   "change_this_secret",
   "replace_with_a_long_random_secret_before_deploy",
   "replace_with_a_strong_admin_password",
+  "replace_with_supabase_server_secret",
+  "your_service_role_jwt",
+]);
+
+const PLACEHOLDER_SUPABASE_HOSTS = new Set([
+  "your-project.supabase.co",
+  "your_project.supabase.co",
 ]);
 
 function isHttpUrl(value) {
@@ -12,6 +19,38 @@ function isHttpUrl(value) {
     return ["http:", "https:"].includes(url.protocol);
   } catch (error) {
     return false;
+  }
+}
+
+function getSupabaseUrlIssue(value) {
+  const rawValue = String(value || "").trim();
+
+  if (!rawValue) {
+    return "SUPABASE_URL is missing.";
+  }
+
+  try {
+    const url = new URL(rawValue);
+
+    if (url.protocol !== "https:") {
+      return "SUPABASE_URL must use HTTPS.";
+    }
+
+    if (PLACEHOLDER_SUPABASE_HOSTS.has(url.hostname.toLowerCase())) {
+      return "SUPABASE_URL still contains the example project hostname.";
+    }
+
+    if (!url.hostname || ["localhost", "127.0.0.1"].includes(url.hostname.toLowerCase())) {
+      return "SUPABASE_URL must point to the deployed Supabase project.";
+    }
+
+    if (url.username || url.password || url.search || url.hash) {
+      return "SUPABASE_URL must contain only the project API URL.";
+    }
+
+    return "";
+  } catch (error) {
+    return "SUPABASE_URL must be a valid project HTTPS URL.";
   }
 }
 
@@ -94,25 +133,31 @@ function validateEnvironment(env = process.env, { strict = env.NODE_ENV === "pro
 
     const hasSupabaseUrl = Boolean(String(env.SUPABASE_URL || "").trim());
     const supabaseServerKey = env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
-    const hasSupabaseServiceKey = Boolean(String(supabaseServerKey || "").trim());
+    const normalizedSupabaseKey = String(supabaseServerKey || "").trim();
+    const hasSupabaseServiceKey = Boolean(normalizedSupabaseKey);
 
     if (hasSupabaseUrl || hasSupabaseServiceKey) {
-      if (!isHttpUrl(env.SUPABASE_URL) || !String(env.SUPABASE_URL).startsWith("https://")) {
-        issues.push("SUPABASE_URL must be configured with the project HTTPS URL.");
+      const supabaseUrlIssue = getSupabaseUrlIssue(env.SUPABASE_URL);
+
+      if (supabaseUrlIssue) {
+        issues.push(supabaseUrlIssue);
       }
 
       if (!hasSupabaseServiceKey) {
         issues.push(
           "SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY must be configured for private file storage."
         );
-      } else if (!["secret", "service_role"].includes(getSupabaseKeyRole(supabaseServerKey))) {
+      } else if (
+        PLACEHOLDER_VALUES.has(normalizedSupabaseKey) ||
+        !["secret", "service_role"].includes(getSupabaseKeyRole(normalizedSupabaseKey))
+      ) {
         issues.push(
-          "The Supabase server key must be a secret key (sb_secret_...) or legacy service_role key, never anon/publishable."
+          "The Supabase server key must be a secret key (sb_secret_...) or legacy service_role key, never a placeholder or anon/publishable key."
         );
       }
     } else {
       warnings.push(
-        "Supabase Storage is not configured. File uploads will remain unavailable until SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set."
+        "Supabase Storage is not configured. File uploads will remain unavailable until SUPABASE_URL and a server secret key are set."
       );
     }
   }
@@ -133,5 +178,6 @@ function validateEnvironment(env = process.env, { strict = env.NODE_ENV === "pro
 
 module.exports = {
   getSupabaseKeyRole,
+  getSupabaseUrlIssue,
   validateEnvironment,
 };
