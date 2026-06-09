@@ -309,6 +309,10 @@ function setMaterialSource(source) {
 }
 
 function openMaterialDraft(kind) {
+  if (hasPendingMaterialDraft() && !addMaterial()) {
+    return false;
+  }
+
   selectedMaterialKind = kind;
   const materialType = materialTypes[kind];
 
@@ -323,6 +327,7 @@ function openMaterialDraft(kind) {
   setMaterialSource(materialType.sources[0]);
   materialDraft.hidden = false;
   materialTitleInput.focus();
+  return true;
 }
 
 function closeMaterialDraft() {
@@ -457,8 +462,9 @@ materialOptions.addEventListener("click", (event) => {
 
 materialOptions.querySelectorAll("[data-material-kind]").forEach((option) => {
   option.addEventListener("click", () => {
-    openMaterialDraft(option.dataset.materialKind);
-    closeMaterialOptions();
+    if (openMaterialDraft(option.dataset.materialKind)) {
+      closeMaterialOptions();
+    }
   });
 });
 
